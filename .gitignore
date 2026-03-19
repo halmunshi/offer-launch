@@ -16,3 +16,8 @@ node_modules/
 
 # OS
 .DS_Store
+
+# Local planning docs
+/PLAN.md
+/backend/BACKEND.md
+/frontend/FRONTEND.md
