@@ -15,22 +15,30 @@ async function request<T>(input: string, init: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+function buildAuthHeader(token: string | null): Record<string, string> {
+  if (!token) {
+    return {};
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 export const api = {
-  get: async <T>(path: string, token: string): Promise<T> => {
+  get: async <T>(path: string, token: string | null): Promise<T> => {
     return request<T>(path, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: buildAuthHeader(token),
       cache: "no-store",
     });
   },
 
-  post: async <T, B>(path: string, body: B, token: string): Promise<T> => {
+  post: async <T, B>(path: string, body: B, token: string | null): Promise<T> => {
     return request<T>(path, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...buildAuthHeader(token),
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
