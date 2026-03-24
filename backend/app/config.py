@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     DATABASE_URL_DIRECT: str
     FRONTEND_URL: str
+    CLERK_WEBHOOK_SECRET: str
+    CLERK_JWKS_URL: str | None = None
+    REDIS_URL: str | None = None
+    CELERY_BROKER_URL: str | None = None
+    CELERY_RESULT_BACKEND: str | None = None
     ENVIRONMENT: str = "development"
 
     @field_validator("DATABASE_URL", mode="before")
