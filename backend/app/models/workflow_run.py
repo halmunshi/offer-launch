@@ -48,7 +48,7 @@ class WorkflowRun(Base):
     active_agents: Mapped[list] = mapped_column(
         ARRAY(String),
         nullable=False,
-        server_default=text("ARRAY['analyst','copywriter','assembler']"),
+        server_default=text("ARRAY['copywriter','funnel_builder']"),
         comment="Which agent nodes run in this workflow. Drives job creation."
     )
     status: Mapped[WorkflowStatus] = mapped_column(
@@ -67,7 +67,6 @@ class WorkflowRun(Base):
     )
     langgraph_thread_id: Mapped[str | None] = mapped_column(
         Text, nullable=True,
-        comment="v2 — LangGraph AsyncPostgresSaver thread_id for checkpoint resume"
     )
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[DateTime | None] = mapped_column(

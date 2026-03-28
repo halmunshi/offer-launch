@@ -61,7 +61,7 @@ async def create_workflow_run(
             offer_id=offer.id,
             user_id=current_user.id,
             workflow_type=payload.workflow_type,
-            active_agents=["analyst", "copywriter", "assembler"],
+            active_agents=["copywriter", "funnel_builder"],
             status=WorkflowStatus.pending,
         )
         db.add(workflow_run)
@@ -103,7 +103,7 @@ async def create_workflow_run(
             workflow_run_id=workflow_run.id,
             offer_id=offer.id,
             user_id=current_user.id,
-            agent_type=AgentType.analyst,
+            agent_type=AgentType.copywriter,
             status=JobStatus.pending,
             progress=[],
         )

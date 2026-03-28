@@ -29,3 +29,4 @@ from app.models.funnel_project import FunnelProject  # noqa: F401
 from app.models.export import Export  # noqa: F401
 from app.models.integration import Integration  # noqa: F401
 from app.models.asset import Asset  # noqa: F401
+from app.models.chat_message import ChatMessage  # noqa: F401

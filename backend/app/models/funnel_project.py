@@ -66,6 +66,14 @@ class FunnelProject(Base):
         nullable=False,
         comment="Denormalised for ownership checks"
     )
+    session_id: Mapped[str | None] = mapped_column(
+        Text, nullable=True,
+        comment="Claude Agent SDK session ID. Tracks the ongoing user ↔ funnel_builder chat session only. NOT orchestration state — that lives on workflow_runs.langgraph_thread_id. Stored on first builder open. Resumed on return to keep chat context. Null until user first opens the builder for this funnel."
+    )
+    session_summary: Mapped[str | None] = mapped_column(
+        Text, nullable=True,
+        comment="Compressed summary of older chat history injected into agent context instead of raw messages. Updated periodically. Keeps token cost flat as conversation grows."
+    )
     files: Mapped[dict] = mapped_column(
         JSONB, nullable=False,
         comment="Complete Sandpack virtual file tree. ~80KB. node_modules excluded."
