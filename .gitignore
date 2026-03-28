@@ -23,3 +23,5 @@ node_modules/
 /frontend/FRONTEND.md
 /AGENTS.md
 /CLAUDE.md
+/.opencode
+/.agents
