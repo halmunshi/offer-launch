@@ -2,7 +2,7 @@ from typing import Literal
 from datetime import datetime
 import uuid
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.models.enums import OfferStatus
 from app.schemas.common import BaseSchema, TimestampSchema, UUIDSchema
@@ -32,6 +32,53 @@ class IntakeData(BaseSchema):
     copy_style: str = Field(max_length=50)
     funnel_type: Literal["vsl", "lead_magnet"]
     theme: str = Field(max_length=50)
+    selected_pages: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_selected_pages(self) -> "IntakeData":
+        allowed_pages = {
+            "presell",
+            "vsl",
+            "order",
+            "thank_you",
+            "upsell",
+            "downsell",
+            "opt_in",
+            "bridge",
+            "offer",
+        }
+        minimum_pages_by_funnel = {
+            "vsl": ["vsl", "order", "thank_you"],
+            "lead_magnet": ["opt_in", "thank_you"],
+        }
+
+        cleaned: list[str] = []
+        seen: set[str] = set()
+        for page in self.selected_pages:
+            normalized = str(page).strip().lower().replace("-", "_").replace(" ", "_")
+            if not normalized:
+                continue
+            if normalized not in allowed_pages:
+                raise ValueError(f"Unsupported page in selected_pages: {normalized}")
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            cleaned.append(normalized)
+
+        required = minimum_pages_by_funnel[self.funnel_type]
+
+        if not cleaned:
+            cleaned = list(required)
+
+        missing_required = [page for page in required if page not in cleaned]
+        if missing_required:
+            raise ValueError(
+                "selected_pages is missing required pages for "
+                f"{self.funnel_type}: {', '.join(missing_required)}"
+            )
+
+        self.selected_pages = cleaned
+        return self
 
 
 class OfferCreate(BaseSchema):

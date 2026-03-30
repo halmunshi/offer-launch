@@ -65,7 +65,7 @@ def build_agent_context(
             ("Price point", intake.get("price_point")),
             ("Funnel type", intake.get("funnel_type")),
             ("Copy style", intake.get("copy_style")),
-            ("Theme direction", intake.get("theme_direction")),
+            ("Theme direction", intake.get("theme")),
             ("Whats included", intake.get("whats_included")),
             ("Mechanism", intake.get("unique_mechanism")),
             ("Transformation", intake.get("transformation")),
@@ -78,7 +78,7 @@ def build_agent_context(
         parts.append("\n=== AUDIENCE ===")
         for label, val in [
             ("Ideal client", intake.get("ideal_client")),
-            ("Age range", intake.get("age_range")),
+            ("Age range", intake.get("age_ranges")),
             ("Pain point", intake.get("pain_point")),
             ("Awareness level", intake.get("awareness_level")),
         ]:
@@ -316,3 +316,36 @@ def list_funnel_file_paths(files_jsonb: dict) -> list[str]:
             if not path.startswith("/node_modules/") and not path.startswith("/.")
         ]
     )
+
+
+def load_boilerplate_components() -> str:
+    """
+    Reads all component source files from the boilerplate and returns
+    them as a formatted string for injection into funnel_builder context.
+
+    Includes:
+      - /src/components/ui/*.tsx
+      - /src/components/funnel/*.tsx
+      - /src/lib/utils.ts
+    """
+    lines = ["=== COMPONENT SOURCE CODE ==="]
+
+    ui_dir = BOILERPLATE_DIR / "src" / "components" / "ui"
+    funnel_dir = BOILERPLATE_DIR / "src" / "components" / "funnel"
+    utils_file = BOILERPLATE_DIR / "src" / "lib" / "utils.ts"
+
+    if ui_dir.exists():
+        for tsx_file in sorted(ui_dir.glob("*.tsx")):
+            lines.append(f"\n--- /src/components/ui/{tsx_file.name} ---")
+            lines.append(tsx_file.read_text(encoding="utf-8"))
+
+    if funnel_dir.exists():
+        for tsx_file in sorted(funnel_dir.glob("*.tsx")):
+            lines.append(f"\n--- /src/components/funnel/{tsx_file.name} ---")
+            lines.append(tsx_file.read_text(encoding="utf-8"))
+
+    if utils_file.exists():
+        lines.append("\n--- /src/lib/utils.ts ---")
+        lines.append(utils_file.read_text(encoding="utf-8"))
+
+    return "\n".join(lines)

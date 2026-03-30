@@ -8,10 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.limiter import limiter
 from app.middleware.clerk_auth import get_current_user
-from app.models.enums import AgentType, FunnelStatus, JobStatus, StepStatus, StepType, WorkflowStatus
+from app.models.enums import AgentType, FunnelStatus, JobStatus, WorkflowStatus
 from app.models.funnel import Funnel
 from app.models.funnel_project import FunnelProject
-from app.models.funnel_step import FunnelStep
 from app.models.job import Job
 from app.models.offer import Offer
 from app.models.user import User
@@ -21,19 +20,6 @@ from app.schemas.workflow_run import WorkflowRunCreate, WorkflowRunResponse
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/workflow-runs", tags=["workflow-runs"])
-
-
-def _steps_for_funnel_type(funnel_type: str) -> list[StepType]:
-    if funnel_type == "lead_magnet":
-        return [StepType.optin, StepType.thankyou, StepType.bridge, StepType.offer]
-    return [
-        StepType.presell,
-        StepType.vsl,
-        StepType.order,
-        StepType.upsell,
-        StepType.downsell,
-        StepType.thankyou,
-    ]
 
 
 @router.post("", response_model=WorkflowRunResponse, status_code=status.HTTP_201_CREATED)
@@ -86,18 +72,6 @@ async def create_workflow_run(
             boilerplate_version="1.0.0",
         )
         db.add(funnel_project)
-
-        steps = _steps_for_funnel_type(payload.funnel_type.value)
-        for index, step_type in enumerate(steps, start=1):
-            db.add(
-                FunnelStep(
-                    funnel_id=funnel.id,
-                    step_order=index,
-                    step_type=step_type,
-                    status=StepStatus.pending,
-                    slug=step_type.value.replace("_", "-"),
-                )
-            )
 
         job = Job(
             workflow_run_id=workflow_run.id,

@@ -87,9 +87,9 @@ async def edit_funnel_file(path: str, old_str: str, new_str: str, funnel_id: str
     return f"Edited: {path}"
 
 
-async def delete_funnel_file(path: str, step_id: str, funnel_id: str, db) -> str:
+async def delete_funnel_file(path: str, funnel_id: str, db) -> str:
     """
-    Removes a file from funnel_projects.files JSONB and deletes funnel_steps row.
+    Removes a file from funnel_projects.files JSONB.
     """
     remove_file_query = text(
         """
@@ -99,19 +99,7 @@ async def delete_funnel_file(path: str, step_id: str, funnel_id: str, db) -> str
         WHERE funnel_id = :funnel_id
         """
     )
-    delete_step_query = text(
-        """
-        DELETE FROM funnel_steps
-        WHERE id = :step_id
-        """
-    )
-
-    try:
-        await db.execute(remove_file_query, {"path": path, "funnel_id": funnel_id})
-        await db.execute(delete_step_query, {"step_id": step_id})
-        await db.commit()
-    except Exception:
-        await db.rollback()
-        raise
+    await db.execute(remove_file_query, {"path": path, "funnel_id": funnel_id})
+    await db.commit()
 
     return f"Deleted: {path}"

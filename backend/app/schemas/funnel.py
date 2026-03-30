@@ -1,19 +1,8 @@
 from datetime import datetime
 import uuid
 
-from app.models.enums import FunnelStatus, FunnelType, StepStatus, StepType
+from app.models.enums import FunnelStatus, FunnelType
 from app.schemas.common import TimestampSchema, UUIDSchema
-
-
-class FunnelStepResponse(UUIDSchema):
-    funnel_id: uuid.UUID
-    step_order: int
-    step_type: StepType
-    custom_step_name: str | None = None
-    status: StepStatus
-    slug: str
-    created_at: datetime
-    updated_at: datetime
 
 
 class FunnelResponse(UUIDSchema, TimestampSchema):
@@ -26,4 +15,3 @@ class FunnelResponse(UUIDSchema, TimestampSchema):
     status: FunnelStatus
     published_url: str | None = None
     published_at: datetime | None = None
-    steps: list[FunnelStepResponse] = []

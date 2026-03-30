@@ -10,8 +10,6 @@ from app.models.enums import (  # noqa: F401
     JobStatus,
     FunnelType,
     FunnelStatus,
-    StepType,
-    StepStatus,
     ExportType,
     IntegrationProvider,
 )
@@ -24,7 +22,6 @@ from app.models.workflow_run import WorkflowRun  # noqa: F401
 from app.models.job import Job  # noqa: F401
 from app.models.agent_output import AgentOutput  # noqa: F401
 from app.models.funnel import Funnel  # noqa: F401
-from app.models.funnel_step import FunnelStep  # noqa: F401
 from app.models.funnel_project import FunnelProject  # noqa: F401
 from app.models.export import Export  # noqa: F401
 from app.models.integration import Integration  # noqa: F401

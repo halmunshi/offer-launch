@@ -66,49 +66,6 @@ class FunnelStatus(str, enum.Enum):
     error = "error"
 
 
-class StepType(str, enum.Enum):
-    # Awareness / entry
-    presell = "presell"
-    optin = "optin"
-    waiting_list = "waiting_list"
-    launch_coming = "launch_coming"
-    quiz = "quiz"
-
-    # Core sales
-    vsl = "vsl"
-    sales = "sales"
-    webinar_register = "webinar_register"
-    webinar_replay = "webinar_replay"
-
-    # Conversion / checkout
-    order = "order"
-    order_bump = "order_bump"
-    application = "application"
-    book_call = "book_call"
-
-    # Post-purchase
-    upsell = "upsell"
-    downsell = "downsell"
-    thankyou = "thankyou"
-    members_area = "members_area"
-
-    # Bridge / nurture
-    bridge = "bridge"
-    offer = "offer"
-    case_study = "case_study"
-    demo = "demo"
-
-    # Custom (v2)
-    custom = "custom"
-
-
-class StepStatus(str, enum.Enum):
-    pending = "pending"
-    generating = "generating"
-    ready = "ready"
-    error = "error"
-
-
 class ExportType(str, enum.Enum):
     github = "github"
     zip = "zip"

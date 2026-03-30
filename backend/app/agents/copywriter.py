@@ -112,62 +112,85 @@ def _normalize_page_key(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", value.lower())
 
 
+PAGE_ALIASES: dict[str, tuple[str, ...]] = {
+    "presell": ("presell", "pre sell"),
+    "vsl": ("vsl", "video sales letter"),
+    "order": ("order",),
+    "thank_you": ("thankyou", "thank you"),
+    "upsell": ("upsell",),
+    "downsell": ("downsell",),
+    "opt_in": ("optin", "opt in", "squeeze"),
+    "bridge": ("bridge",),
+    "offer": ("offer",),
+}
+
+
+def _get_selected_pages(intake: dict) -> list[str]:
+    selected_pages = intake.get("selected_pages")
+    if not isinstance(selected_pages, list):
+        selected_pages = []
+
+    selected: list[str] = []
+    seen: set[str] = set()
+    for page in selected_pages:
+        normalized = str(page).strip().lower().replace("-", "_").replace(" ", "_")
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        selected.append(normalized)
+
+    if not selected:
+        funnel_type = str(intake.get("funnel_type", "")).strip().lower()
+        if funnel_type == "vsl":
+            return ["vsl", "order", "thank_you"]
+        if funnel_type == "lead_magnet":
+            return ["opt_in", "thank_you"]
+
+    return selected
+
+
 def _build_page_scope_instruction(intake: dict) -> str:
     funnel_type = str(intake.get("funnel_type", "")).strip() or "unknown"
-    optional_pages = intake.get("optional_pages")
-    if not isinstance(optional_pages, list):
-        optional_pages = []
-
-    selected = [str(page).strip() for page in optional_pages if str(page).strip()]
+    selected = _get_selected_pages(intake)
     selected_list = ", ".join(selected) if selected else "none"
 
     return "\n".join(
         [
             "=== PAGE SELECTION CONSTRAINT ===",
             f"Funnel type: {funnel_type}",
-            f"Selected optional pages: {selected_list}",
-            "Write copy for core pages of this funnel type plus selected optional pages only.",
-            "If selected optional pages are none, do not include any optional page sections.",
-            "Do not add unselected optional pages.",
+            f"Selected pages: {selected_list}",
+            "Write copy for exactly the selected pages only.",
+            "Do not include any page section that is not in selected_pages.",
+            "Use one ## section heading per selected page.",
         ]
     )
 
 
-def _validate_optional_pages(markdown: str, intake: dict) -> None:
-    optional_pages = intake.get("optional_pages")
-    if not isinstance(optional_pages, list):
-        optional_pages = []
-
-    selected = {_normalize_page_key(str(page)) for page in optional_pages if str(page).strip()}
-
-    optional_aliases = {
-        "upsell": ("upsell",),
-        "downsell": ("downsell",),
-        "bridge": ("bridge",),
-        "offer": ("offer",),
-    }
+def _validate_selected_pages(markdown: str, intake: dict) -> None:
+    selected = set(_get_selected_pages(intake))
 
     headings = _extract_page_headings(markdown)
     normalized_headings = [_normalize_page_key(heading) for heading in headings]
 
-    found_optional: set[str] = set()
-    for optional_key, aliases in optional_aliases.items():
+    found_pages: set[str] = set()
+    for page_key, aliases in PAGE_ALIASES.items():
         for heading in normalized_headings:
-            if any(alias in heading for alias in aliases):
-                found_optional.add(optional_key)
+            normalized_aliases = [_normalize_page_key(alias) for alias in aliases]
+            if any(alias in heading for alias in normalized_aliases):
+                found_pages.add(page_key)
                 break
 
-    unexpected = sorted(found_optional - selected)
+    unexpected = sorted(found_pages - selected)
     if unexpected:
         raise RuntimeError(
-            "Copywriter wrote unselected optional pages: "
+            "Copywriter wrote unselected pages: "
             f"{', '.join(unexpected)}. Celery will retry."
         )
 
-    missing = sorted(selected - found_optional)
+    missing = sorted(selected - found_pages)
     if missing:
         raise RuntimeError(
-            "Copywriter missed selected optional pages: "
+            "Copywriter missed selected pages: "
             f"{', '.join(missing)}. Celery will retry."
         )
 
@@ -241,17 +264,11 @@ async def copywriter_node(state: AgentState) -> AgentState:
             "Copywriter output missing page headings. Expected Markdown with ## sections. Celery will retry."
         )
 
-    _validate_optional_pages(markdown_output, intake)
+    _validate_selected_pages(markdown_output, intake)
 
     pages_written = _extract_page_headings(markdown_output)
 
-    state["copywriter_output"] = {
-        "markdown": markdown_output,
-        "path": "/src/content.md",
-        "pages_written": pages_written,
-        "funnel_type": state.get("funnel_type", "unknown"),
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-    }
+    state["copywriter_output"] = markdown_output
 
     state["progress"].append(
         {
