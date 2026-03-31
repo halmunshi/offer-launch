@@ -10,7 +10,7 @@ MODEL = "claude-haiku-4-5-20251001"
 AGENTS_DIR = Path(__file__).resolve().parent
 BOILERPLATE_DIR = AGENTS_DIR.parent / "boilerplate"
 if not BOILERPLATE_DIR.exists():
-    BOILERPLATE_DIR = AGENTS_DIR.parents[2] / "offerlaunch-boilerplate"
+    BOILERPLATE_DIR = AGENTS_DIR.parents[2] / "boilerplate"
 
 CONTEXT_WINDOW = 200_000
 SAFETY_BUFFER = 30_000
@@ -20,7 +20,7 @@ HISTORY_BUDGET = 150_000
 def build_agent_context(
     agent_type: str,
     intake: Optional[dict] = None,
-    copywriter_output: Optional[dict] = None,
+    copywriter_output: Optional[str] = None,
     analyst_output: Optional[dict] = None,
     session_summary: Optional[str] = None,
 ) -> Optional[str]:
@@ -96,7 +96,7 @@ def build_agent_context(
 
     if copywriter_output and include_copywriter_output:
         parts.append("\n=== COPY TO USE ===")
-        parts.append(json.dumps(copywriter_output, indent=2)[:8000])
+        parts.append(copywriter_output[:12000])
 
     if analyst_output and include_analyst_output:
         parts.append("\n=== MARKET ANALYSIS ===")

@@ -171,9 +171,18 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     """
     from claude_agent_sdk import create_sdk_mcp_server, tool
 
+    state["progress"].append(
+        {
+            "type": "start",
+            "stage": "funnel_builder",
+            "message": "Starting funnel generation",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "done": False,
+        }
+    )
+
     api_key = _load_anthropic_api_key()
     db = state.get("db") if isinstance(state, dict) else None
-    virtual_files: dict[str, str] = {}
 
     @tool(
         "read_funnel_file",
@@ -182,10 +191,7 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     )
     async def _read(args: dict) -> dict:
         path = args.get("path", "")
-        if db is not None:
-            content = await read_funnel_file(path=path, funnel_id=state["funnel_id"], db=db)
-        else:
-            content = virtual_files.get(path, "")
+        content = await read_funnel_file(path=path, funnel_id=state["funnel_id"], db=db)
         return {"content": [{"type": "text", "text": content or ""}]}
 
     @tool(
@@ -199,11 +205,7 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     async def _write(args: dict) -> dict:
         path = args.get("path", "")
         content = args.get("content", "")
-
-        if db is not None:
-            await write_funnel_file(path=path, content=content, funnel_id=state["funnel_id"], db=db)
-        else:
-            virtual_files[path] = content
+        await write_funnel_file(path=path, content=content, funnel_id=state["funnel_id"], db=db)
 
         return {"content": [{"type": "text", "text": f"Written: {path}"}]}
 
@@ -220,29 +222,13 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
         path = args.get("path", "")
         old_str = args.get("old_str", "")
         new_str = args.get("new_str", "")
-
-        if db is not None:
-            result = await edit_funnel_file(
-                path=path,
-                old_str=old_str,
-                new_str=new_str,
-                funnel_id=state["funnel_id"],
-                db=db,
-            )
-            return {"content": [{"type": "text", "text": result}]}
-
-        current = virtual_files.get(path)
-        if current is None:
-            result = f"File {path} not found. Use write_funnel_file to create it."
-        elif not old_str or old_str not in current:
-            result = (
-                f"String not found in {path}. Call read_funnel_file first and "
-                "use the exact text you want to replace."
-            )
-        else:
-            virtual_files[path] = current.replace(old_str, new_str, 1)
-            result = f"Edited: {path}"
-
+        result = await edit_funnel_file(
+            path=path,
+            old_str=old_str,
+            new_str=new_str,
+            funnel_id=state["funnel_id"],
+            db=db,
+        )
         return {"content": [{"type": "text", "text": result}]}
 
     @tool(
@@ -252,11 +238,7 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     )
     async def _delete(args: dict) -> dict:
         path = args.get("path", "")
-
-        if db is not None:
-            await delete_funnel_file(path=path, funnel_id=state["funnel_id"], db=db)
-        else:
-            virtual_files.pop(path, None)
+        await delete_funnel_file(path=path, funnel_id=state["funnel_id"], db=db)
 
         return {"content": [{"type": "text", "text": f"Deleted: {path}"}]}
 
@@ -308,6 +290,16 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     )
 
     result_text: Optional[str] = None
+
+    state["progress"].append(
+        {
+            "type": "status",
+            "stage": "funnel_builder",
+            "message": "Agent configured, beginning generation turns",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "done": False,
+        }
+    )
 
     async for message in query(prompt=prompt, options=options):
         if isinstance(message, AssistantMessage):
@@ -367,15 +359,11 @@ async def run_interactive_session(
 
     _ = (user_id, user_message)
     api_key = _load_anthropic_api_key()
-    virtual_files: dict[str, str] = {}
 
     @tool("read_funnel_file", "Read current content", {"path": {"type": "string"}})
     async def _read(args: dict) -> dict:
         path = args.get("path", "")
-        if db is not None:
-            content = await read_funnel_file(path, funnel_id, db)
-        else:
-            content = virtual_files.get(path, "")
+        content = await read_funnel_file(path, funnel_id, db)
         return {"content": [{"type": "text", "text": content or ""}]}
 
     @tool(
@@ -386,10 +374,7 @@ async def run_interactive_session(
     async def _write(args: dict) -> dict:
         path = args.get("path", "")
         content = args.get("content", "")
-        if db is not None:
-            await write_funnel_file(path, content, funnel_id, db)
-        else:
-            virtual_files[path] = content
+        await write_funnel_file(path, content, funnel_id, db)
         return {"content": [{"type": "text", "text": f"Written: {path}"}]}
 
     @tool(
@@ -405,31 +390,13 @@ async def run_interactive_session(
         path = args.get("path", "")
         old_str = args.get("old_str", "")
         new_str = args.get("new_str", "")
-
-        if db is not None:
-            result = await edit_funnel_file(path, old_str, new_str, funnel_id, db)
-        else:
-            current = virtual_files.get(path)
-            if current is None:
-                result = f"File {path} not found. Use write_funnel_file to create it."
-            elif not old_str or old_str not in current:
-                result = (
-                    f"String not found in {path}. Call read_funnel_file first and "
-                    "use the exact text you want to replace."
-                )
-            else:
-                virtual_files[path] = current.replace(old_str, new_str, 1)
-                result = f"Edited: {path}"
-
+        result = await edit_funnel_file(path, old_str, new_str, funnel_id, db)
         return {"content": [{"type": "text", "text": result}]}
 
     @tool("delete_funnel_file", "Delete file", {"path": {"type": "string"}})
     async def _delete(args: dict) -> dict:
         path = args.get("path", "")
-        if db is not None:
-            await delete_funnel_file(path, funnel_id, db)
-        else:
-            virtual_files.pop(path, None)
+        await delete_funnel_file(path, funnel_id, db)
         return {"content": [{"type": "text", "text": f"Deleted: {path}"}]}
 
     tools_server = create_sdk_mcp_server(name="tools", tools=[_read, _write, _edit, _delete])

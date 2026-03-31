@@ -1,11 +1,19 @@
+from app.database import AsyncSessionLocal
 from sqlalchemy import text
 
 
-async def read_funnel_file(path: str, funnel_id: str, db) -> str:
+async def read_funnel_file(path: str, funnel_id: str, db=None) -> str:
     """
     Reads a single file from funnel_projects.files JSONB.
-    Returns the file content string. Returns empty string if not found.
+    Returns the file content string or empty string when not found.
     """
+    if db is None:
+        async with AsyncSessionLocal() as session:
+            return await _read_funnel_file_impl(path, funnel_id, session)
+    return await _read_funnel_file_impl(path, funnel_id, db)
+
+
+async def _read_funnel_file_impl(path: str, funnel_id: str, db) -> str:
     query = text(
         """
         SELECT files->>:path AS content
@@ -18,18 +26,25 @@ async def read_funnel_file(path: str, funnel_id: str, db) -> str:
     return content or ""
 
 
-async def write_funnel_file(path: str, content: str, funnel_id: str, db) -> str:
+async def write_funnel_file(path: str, content: str, funnel_id: str, db=None) -> str:
     """
     Writes a complete file to funnel_projects.files JSONB.
-    ONE DB effect: jsonb_set patches only the specific path key.
     """
+    if db is None:
+        async with AsyncSessionLocal() as session:
+            return await _write_funnel_file_impl(path, content, funnel_id, session)
+    return await _write_funnel_file_impl(path, content, funnel_id, db)
+
+
+async def _write_funnel_file_impl(path: str, content: str, funnel_id: str, db) -> str:
     query = text(
         """
         UPDATE funnel_projects
         SET files = jsonb_set(
                 COALESCE(files, '{}'::jsonb),
                 ARRAY[:path],
-                to_jsonb(CAST(:content AS text))
+                to_jsonb(CAST(:content AS text)),
+                true
             ),
             updated_at = now()
         WHERE funnel_id = :funnel_id
@@ -40,27 +55,22 @@ async def write_funnel_file(path: str, content: str, funnel_id: str, db) -> str:
     return f"Written: {path}"
 
 
-async def edit_funnel_file(path: str, old_str: str, new_str: str, funnel_id: str, db) -> str:
+async def edit_funnel_file(path: str, old_str: str, new_str: str, funnel_id: str, db=None) -> str:
     """
-    Makes a surgical replacement within an existing file.
+    Makes a surgical replacement in an existing file.
     Replaces only the first occurrence of old_str.
     """
-    select_query = text(
-        """
-        SELECT
-            files ? :path AS file_exists,
-            files->>:path AS content
-        FROM funnel_projects
-        WHERE funnel_id = :funnel_id
-        """
-    )
-    result = await db.execute(select_query, {"path": path, "funnel_id": funnel_id})
-    row = result.mappings().first()
+    if db is None:
+        async with AsyncSessionLocal() as session:
+            return await _edit_funnel_file_impl(path, old_str, new_str, funnel_id, session)
+    return await _edit_funnel_file_impl(path, old_str, new_str, funnel_id, db)
 
-    if not row or not row["file_exists"]:
+
+async def _edit_funnel_file_impl(path: str, old_str: str, new_str: str, funnel_id: str, db) -> str:
+    current_content = await _read_funnel_file_impl(path, funnel_id, db)
+    if not current_content:
         return f"File {path} not found. Use write_funnel_file to create it."
 
-    current_content = row["content"] or ""
     if not old_str or old_str not in current_content:
         return (
             f"String not found in {path}. Call read_funnel_file first and "
@@ -68,38 +78,29 @@ async def edit_funnel_file(path: str, old_str: str, new_str: str, funnel_id: str
         )
 
     updated_content = current_content.replace(old_str, new_str, 1)
-
-    update_query = text(
-        """
-        UPDATE funnel_projects
-        SET files = jsonb_set(
-                COALESCE(files, '{}'::jsonb),
-                ARRAY[:path],
-                to_jsonb(CAST(:content AS text))
-            ),
-            updated_at = now()
-        WHERE funnel_id = :funnel_id
-        """
-    )
-    await db.execute(update_query, {"path": path, "content": updated_content, "funnel_id": funnel_id})
-    await db.commit()
-
+    await _write_funnel_file_impl(path, updated_content, funnel_id, db)
     return f"Edited: {path}"
 
 
-async def delete_funnel_file(path: str, funnel_id: str, db) -> str:
+async def delete_funnel_file(path: str, funnel_id: str, db=None) -> str:
     """
-    Removes a file from funnel_projects.files JSONB.
+    Removes a file key from funnel_projects.files JSONB.
     """
+    if db is None:
+        async with AsyncSessionLocal() as session:
+            return await _delete_funnel_file_impl(path, funnel_id, session)
+    return await _delete_funnel_file_impl(path, funnel_id, db)
+
+
+async def _delete_funnel_file_impl(path: str, funnel_id: str, db) -> str:
     remove_file_query = text(
         """
         UPDATE funnel_projects
-        SET files = COALESCE(files, '{}'::jsonb) - :path,
+        SET files = files - :path,
             updated_at = now()
         WHERE funnel_id = :funnel_id
         """
     )
     await db.execute(remove_file_query, {"path": path, "funnel_id": funnel_id})
     await db.commit()
-
     return f"Deleted: {path}"

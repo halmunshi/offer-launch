@@ -43,6 +43,16 @@ def _hook_get(hook_input, key: str, default=None):
     return getattr(hook_input, key, default)
 
 
+def _append_local_progress(state: AgentState, event: dict) -> None:
+    """
+    Phase 3 fallback: append hook events directly to in-memory state progress.
+    Phase 4 will additionally persist via jobs.progress + SSE.
+    """
+    progress = state.get("progress")
+    if isinstance(progress, list):
+        progress.append(event)
+
+
 def build_hooks(state: AgentState) -> dict:
     """
     Hook factory for funnel_builder agent.
@@ -82,6 +92,17 @@ def build_hooks(state: AgentState) -> dict:
                     "path": path,
                 },
             )
+
+        _append_local_progress(
+            state,
+            {
+                "type": "tool_call",
+                "stage": "funnel_builder",
+                "message": f"write_funnel_file -> {path}",
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "done": False,
+            },
+        )
 
         return {}
 
@@ -124,6 +145,17 @@ def build_hooks(state: AgentState) -> dict:
                 },
             )
 
+        _append_local_progress(
+            state,
+            {
+                "type": "file_update",
+                "stage": "funnel_builder",
+                "message": f"Updated: {path}",
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "done": False,
+            },
+        )
+
         return {}
 
     async def pre_compact_hook(hook_input, tool_use_id, context):
@@ -145,6 +177,16 @@ def build_hooks(state: AgentState) -> dict:
                     "done": True,
                 },
             )
+        _append_local_progress(
+            state,
+            {
+                "type": "done",
+                "stage": "funnel_builder",
+                "message": "Generation complete",
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "done": True,
+            },
+        )
         return {}
 
     return {

@@ -19,7 +19,7 @@ class AgentState(TypedDict):
     connected_platforms: dict
 
     # -- Agent outputs -----------------------------------------------
-    copywriter_output: Optional[dict]
+    copywriter_output: Optional[str]
     funnel_builder_output: Optional[dict]
 
     # -- V2 HIL fields (defined now, unused in MVP) -----------------
