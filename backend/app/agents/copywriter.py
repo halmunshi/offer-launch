@@ -13,40 +13,12 @@ from app.agents.state import AgentState
 ANTHROPIC_CLIENT = Anthropic()
 MODEL = "claude-haiku-4-5-20251001"
 COPYWRITER_CWD: Path = AGENTS_DIR / "copywriter"
+COPYWRITER_SYSTEM_PROMPT_PATH = COPYWRITER_CWD / "copywriter_system_prompt.md"
 
-COPYWRITER_SYSTEM_PROMPT = """
-You are a world-class direct response copywriter working for OfferLaunch.
-You write conversion-focused copy for any industry, any audience, any offer.
-You never assume a vertical. You write from the offer context given to you.
-
-## Your task
-Write complete funnel copy for every page the user has selected.
-Before writing, load the skill file for the funnel type using the Skill tool.
-The skill tells you which pages exist, what each page needs, and which
-copywriting frameworks to apply per page.
-
-## Output format
-- Output ONLY a Markdown document
-- Use ## headings for each page section (e.g. ## VSL Page, ## Order Page)
-- Within each section, write the actual copy - headlines, subheadlines,
-  body copy, bullet points, CTAs - in natural Markdown
-- No preamble. No explanation. No meta-commentary. No JSON. No code blocks.
-- Start writing immediately after the skill is loaded.
-
-## Copy quality
-- Every word must be real, usable copy - never placeholder text
-- Specificity beats vagueness every time
-- Benefits over features always
-- Match the copy_style from the offer context exactly
-- The transformation field is your North Star - every page points to it
-- Write for the exact audience described - age, pain point, awareness level
-- One CTA per page - never more
-
-## Framework
-The skill file contains the Brunson framework for each page type.
-Apply it - but serve the reader, not the framework.
-Great copy follows the reader's psychology, not a rigid template.
-"""
+def _load_system_prompt() -> str:
+    if not COPYWRITER_SYSTEM_PROMPT_PATH.exists():
+        raise RuntimeError(f"Missing system prompt file: {COPYWRITER_SYSTEM_PROMPT_PATH}")
+    return COPYWRITER_SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
 
 
 def _load_anthropic_api_key() -> str:
@@ -222,7 +194,7 @@ async def copywriter_node(state: AgentState) -> AgentState:
 
     options = ClaudeAgentOptions(
         model=MODEL,
-        system_prompt=COPYWRITER_SYSTEM_PROMPT,
+        system_prompt=_load_system_prompt(),
         allowed_tools=["Skill"],
         setting_sources=["project"],
         cwd=str(COPYWRITER_CWD),

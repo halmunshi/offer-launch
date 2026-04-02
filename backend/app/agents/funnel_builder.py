@@ -29,51 +29,17 @@ from app.agents.tools import (
 )
 
 FUNNEL_BUILDER_CWD: Path = AGENTS_DIR / "funnel_builder"
+FUNNEL_BUILDER_SYSTEM_PROMPT_PATH = FUNNEL_BUILDER_CWD / "funnel_builder_system_prompt.md"
 MODEL = "claude-haiku-4-5-20251001"
 THINKING_BUDGET_TOKENS = 8000
 # Claude Agent SDK/CLI currently exposes `thinking` but does not expose
 # a `max_tokens` option for per-turn output caps. TODO: set max_tokens=16000
 # when SDK/CLI surfaces that parameter.
 
-FUNNEL_BUILDER_SYSTEM_PROMPT = """
-You are an expert React developer building a Vite + React SPA sales funnel
-for OfferLaunch. You work with a fixed component library and strict rules.
-
-## Your tools
-- read_funnel_file(path) - read any file from the funnel project JSONB
-- write_funnel_file(path, content) - write a full file (new or rewrite)
-- edit_funnel_file(path, old_str, new_str) - surgical single-block edit
-- delete_funnel_file(path) - remove a file, then rewrite App.tsx
-
-## Generation rules
-- ALWAYS write theme.ts first - every page component imports from it
-- Write pages in funnel flow order as specified in the skill file
-- Write App.tsx LAST - after all pages are done, with all routes
-- NEVER write to /src/pages/ unless explicitly building that page
-- NEVER write placeholder copy - use the copy from the offer context exactly
-- Every page must have a default export
-- Never hardcode colours - use theme values from @/theme.ts only
-- Use Tailwind utility classes for all styling
-- Import components ONLY from @/components/ui/ and @/components/funnel/
-- Import icons from lucide-react
-- Import animations from framer-motion
-- Import routing from react-router-dom
-
-## File paths
-- Theme: /src/theme.ts
-- Pages: /src/pages/{{PageName}}.tsx (PascalCase filenames)
-- Router: /src/App.tsx
-
-## Component source
-The full source of every available component is provided below.
-Read it to understand props, variants, and composition patterns.
-Do not guess at props - use only what the source code shows.
-
-{component_source}
-
-## Available components
-{component_manifest}
-"""
+def _load_system_prompt_template() -> str:
+    if not FUNNEL_BUILDER_SYSTEM_PROMPT_PATH.exists():
+        raise RuntimeError(f"Missing system prompt file: {FUNNEL_BUILDER_SYSTEM_PROMPT_PATH}")
+    return FUNNEL_BUILDER_SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
 
 
 def _load_anthropic_api_key() -> str:
@@ -244,7 +210,7 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
 
     tools_server = create_sdk_mcp_server(name="tools", tools=[_read, _write, _edit, _delete])
 
-    system_prompt = FUNNEL_BUILDER_SYSTEM_PROMPT.format(
+    system_prompt = _load_system_prompt_template().format(
         component_source=load_boilerplate_components(),
         component_manifest=build_component_manifest(),
     )
@@ -408,7 +374,7 @@ async def run_interactive_session(
         "progress": [],
     }
 
-    system_prompt = FUNNEL_BUILDER_SYSTEM_PROMPT.format(
+    system_prompt = _load_system_prompt_template().format(
         component_source=load_boilerplate_components(),
         component_manifest=build_component_manifest(),
     )
