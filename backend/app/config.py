@@ -1,5 +1,7 @@
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
+import certifi
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,9 +12,9 @@ class Settings(BaseSettings):
     FRONTEND_URL: str
     CLERK_WEBHOOK_SECRET: str
     CLERK_JWKS_URL: str | None = None
-    REDIS_URL: str | None = None
-    CELERY_BROKER_URL: str | None = None
-    CELERY_RESULT_BACKEND: str | None = None
+    REDIS_URL: str
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
     ENVIRONMENT: str = "development"
 
     @field_validator("DATABASE_URL", mode="before")
@@ -56,6 +58,31 @@ class Settings(BaseSettings):
         if direct_url.startswith("postgres://"):
             return direct_url.replace("postgres://", "postgresql://", 1)
         return direct_url
+
+    @field_validator("REDIS_URL", "CELERY_BROKER_URL", "CELERY_RESULT_BACKEND", mode="before")
+    @classmethod
+    def normalize_redis_tls_url(cls, value: str) -> str:
+        redis_url = value.strip()
+        split_url = urlsplit(redis_url)
+
+        if split_url.scheme != "rediss":
+            return redis_url
+
+        query_params = parse_qsl(split_url.query, keep_blank_values=True)
+        params = {key: param_value for key, param_value in query_params}
+
+        params["ssl_cert_reqs"] = "required"
+        params.setdefault("ssl_ca_certs", certifi.where())
+
+        return urlunsplit(
+            (
+                split_url.scheme,
+                split_url.netloc,
+                split_url.path,
+                urlencode(list(params.items())),
+                split_url.fragment,
+            )
+        )
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -16,7 +16,11 @@ async def read_funnel_file(path: str, funnel_id: str, db=None) -> str:
 async def _read_funnel_file_impl(path: str, funnel_id: str, db) -> str:
     query = text(
         """
-        SELECT files->>:path AS content
+        SELECT CASE
+            WHEN jsonb_typeof(files->:path) = 'object' THEN files->:path->>'code'
+            WHEN jsonb_typeof(files->:path) = 'string' THEN files->>:path
+            ELSE NULL
+        END AS content
         FROM funnel_projects
         WHERE funnel_id = :funnel_id
         """
@@ -43,7 +47,7 @@ async def _write_funnel_file_impl(path: str, content: str, funnel_id: str, db) -
         SET files = jsonb_set(
                 COALESCE(files, '{}'::jsonb),
                 ARRAY[:path],
-                to_jsonb(CAST(:content AS text)),
+                jsonb_build_object('code', CAST(:content AS text)),
                 true
             ),
             updated_at = now()
