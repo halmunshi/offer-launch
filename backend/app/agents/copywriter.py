@@ -8,6 +8,7 @@ from anthropic import Anthropic
 from claude_agent_sdk import AssistantMessage, ClaudeAgentOptions, ResultMessage, query
 
 from app.agents.context import AGENTS_DIR, build_agent_context
+from app.agents.hooks import emit_progress_event
 from app.agents.state import AgentState
 
 ANTHROPIC_CLIENT = Anthropic()
@@ -49,11 +50,11 @@ def _load_anthropic_api_key() -> str:
     return ""
 
 
-def _append_progress(state: AgentState, event: dict) -> None:
+async def _append_progress(state: AgentState, event: dict) -> None:
     """
-    Appends a progress event to state["progress"].
+    Appends, persists, and streams a copywriter progress event.
     """
-    state["progress"].append(event)
+    await emit_progress_event(state, event, publish_sse=True)
 
 
 def _extract_page_headings(markdown: str) -> list[str]:
@@ -177,7 +178,8 @@ async def copywriter_node(state: AgentState) -> AgentState:
     )
     if not context:
         state["copywriter_output"] = None
-        state["progress"].append(
+        await _append_progress(
+            state,
             {
                 "stage": "copywriter",
                 "message": "Skipped - no offer context provided",
@@ -209,7 +211,7 @@ async def copywriter_node(state: AgentState) -> AgentState:
             for block in message.content:
                 thinking_text = getattr(block, "thinking", "")
                 if thinking_text:
-                    _append_progress(
+                    await _append_progress(
                         state,
                         {
                             "type": "thinking",
@@ -242,7 +244,8 @@ async def copywriter_node(state: AgentState) -> AgentState:
 
     state["copywriter_output"] = markdown_output
 
-    state["progress"].append(
+    await _append_progress(
+        state,
         {
             "stage": "copywriter",
             "message": f"Copy written for {len(pages_written)} pages: {', '.join(pages_written)}",

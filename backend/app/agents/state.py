@@ -7,6 +7,7 @@ class AgentState(TypedDict):
     offer_id: str
     funnel_id: str
     job_id: str
+    copywriter_job_id: Optional[str]
 
     # -- Pipeline inputs ---------------------------------------------
     # offer_intake is optional. Agents work with or without it.

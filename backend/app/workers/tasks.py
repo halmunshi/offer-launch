@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 import importlib.util
 import json
 import logging
@@ -15,6 +16,8 @@ from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
+_worker_loop: asyncio.AbstractEventLoop | None = None
+
 sync_url = settings.DATABASE_URL_DIRECT.replace(
     "postgresql://",
     "postgresql+psycopg2://",
@@ -22,6 +25,32 @@ sync_url = settings.DATABASE_URL_DIRECT.replace(
 )
 sync_engine = create_engine(sync_url)
 SyncSessionLocal = sessionmaker(sync_engine, expire_on_commit=False)
+
+
+def _get_worker_loop() -> asyncio.AbstractEventLoop:
+    global _worker_loop
+
+    if _worker_loop is None or _worker_loop.is_closed():
+        _worker_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(_worker_loop)
+
+    return _worker_loop
+
+
+def _run_async(coro):
+    loop = _get_worker_loop()
+    return loop.run_until_complete(coro)
+
+
+@atexit.register
+def _close_worker_loop() -> None:
+    global _worker_loop
+
+    if _worker_loop is None or _worker_loop.is_closed():
+        return
+
+    _worker_loop.close()
+    _worker_loop = None
 
 
 class MissingWorkflowContextError(ValueError):
@@ -168,6 +197,7 @@ def generate_funnel_task(self, workflow_run_id: str):
                 "offer_id": str(offer["id"]),
                 "funnel_id": str(funnel["id"]),
                 "job_id": str(funnel_builder_job["id"]),
+                "copywriter_job_id": str(copywriter_job["id"]),
                 "workflow_type": "funnel_only",
                 "active_agents": ["copywriter", "funnel_builder"],
                 "offer_intake": intake_data,
@@ -182,7 +212,7 @@ def generate_funnel_task(self, workflow_run_id: str):
                 "error": None,
             }
 
-            asyncio.run(run_pipeline(state, workflow_run_id))
+            final_state = _run_async(run_pipeline(state, workflow_run_id))
 
             db.execute(
                 text(

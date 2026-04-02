@@ -19,7 +19,7 @@ from app.agents.context import (
     list_funnel_file_paths,
     load_boilerplate_components,
 )
-from app.agents.hooks import build_hooks
+from app.agents.hooks import build_hooks, emit_progress_event, insert_chat_message
 from app.agents.state import AgentState
 from app.agents.tools import (
     delete_funnel_file,
@@ -137,14 +137,15 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     """
     from claude_agent_sdk import create_sdk_mcp_server, tool
 
-    state["progress"].append(
+    await emit_progress_event(
+        state,
         {
             "type": "start",
             "stage": "funnel_builder",
             "message": "Starting funnel generation",
             "ts": datetime.now(timezone.utc).isoformat(),
             "done": False,
-        }
+        },
     )
 
     api_key = _load_anthropic_api_key()
@@ -171,7 +172,43 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     async def _write(args: dict) -> dict:
         path = args.get("path", "")
         content = args.get("content", "")
+
+        call_event = {
+            "type": "tool_call",
+            "stage": "funnel_builder",
+            "tool": "write_funnel_file",
+            "path": path,
+            "message": f"write_funnel_file -> {path}",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "done": False,
+        }
+        await emit_progress_event(state, call_event, publish_sse=True)
+        await insert_chat_message(
+            funnel_id=state["funnel_id"],
+            role="tool_call",
+            content="write_funnel_file",
+            metadata={"tool_name": "write_funnel_file", "path": path},
+        )
+
         await write_funnel_file(path=path, content=content, funnel_id=state["funnel_id"], db=db)
+
+        result_event = {
+            "type": "file_update",
+            "stage": "funnel_builder",
+            "tool": "write_funnel_file",
+            "path": path,
+            "content": content,
+            "message": f"Updated: {path}",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "done": False,
+        }
+        await emit_progress_event(state, result_event, publish_sse=True)
+        await insert_chat_message(
+            funnel_id=state["funnel_id"],
+            role="tool_result",
+            content=f"Updated: {path}",
+            metadata={"path": path, "status": "updated"},
+        )
 
         return {"content": [{"type": "text", "text": f"Written: {path}"}]}
 
@@ -188,6 +225,24 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
         path = args.get("path", "")
         old_str = args.get("old_str", "")
         new_str = args.get("new_str", "")
+
+        call_event = {
+            "type": "tool_call",
+            "stage": "funnel_builder",
+            "tool": "edit_funnel_file",
+            "path": path,
+            "message": f"edit_funnel_file -> {path}",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "done": False,
+        }
+        await emit_progress_event(state, call_event, publish_sse=True)
+        await insert_chat_message(
+            funnel_id=state["funnel_id"],
+            role="tool_call",
+            content="edit_funnel_file",
+            metadata={"tool_name": "edit_funnel_file", "path": path},
+        )
+
         result = await edit_funnel_file(
             path=path,
             old_str=old_str,
@@ -195,6 +250,24 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
             funnel_id=state["funnel_id"],
             db=db,
         )
+
+        result_event = {
+            "type": "file_update",
+            "stage": "funnel_builder",
+            "tool": "edit_funnel_file",
+            "path": path,
+            "message": f"Edited: {path}",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "done": False,
+        }
+        await emit_progress_event(state, result_event, publish_sse=True)
+        await insert_chat_message(
+            funnel_id=state["funnel_id"],
+            role="tool_result",
+            content=f"Edited: {path}",
+            metadata={"path": path, "status": "updated"},
+        )
+
         return {"content": [{"type": "text", "text": result}]}
 
     @tool(
@@ -204,7 +277,42 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     )
     async def _delete(args: dict) -> dict:
         path = args.get("path", "")
+
+        call_event = {
+            "type": "tool_call",
+            "stage": "funnel_builder",
+            "tool": "delete_funnel_file",
+            "path": path,
+            "message": f"delete_funnel_file -> {path}",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "done": False,
+        }
+        await emit_progress_event(state, call_event, publish_sse=True)
+        await insert_chat_message(
+            funnel_id=state["funnel_id"],
+            role="tool_call",
+            content="delete_funnel_file",
+            metadata={"tool_name": "delete_funnel_file", "path": path},
+        )
+
         await delete_funnel_file(path=path, funnel_id=state["funnel_id"], db=db)
+
+        result_event = {
+            "type": "file_delete",
+            "stage": "funnel_builder",
+            "tool": "delete_funnel_file",
+            "path": path,
+            "message": f"Deleted: {path}",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "done": False,
+        }
+        await emit_progress_event(state, result_event, publish_sse=True)
+        await insert_chat_message(
+            funnel_id=state["funnel_id"],
+            role="tool_result",
+            content=f"Deleted: {path}",
+            metadata={"path": path, "status": "deleted"},
+        )
 
         return {"content": [{"type": "text", "text": f"Deleted: {path}"}]}
 
@@ -257,14 +365,15 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
 
     result_text: Optional[str] = None
 
-    state["progress"].append(
+    await emit_progress_event(
+        state,
         {
             "type": "status",
             "stage": "funnel_builder",
             "message": "Agent configured, beginning generation turns",
             "ts": datetime.now(timezone.utc).isoformat(),
             "done": False,
-        }
+        },
     )
 
     async for message in query(prompt=prompt, options=options):
@@ -272,13 +381,14 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
             for block in getattr(message, "content", []) or []:
                 thinking = _read_thinking_text(block)
                 if thinking:
-                    state["progress"].append(
+                    await emit_progress_event(
+                        state,
                         {
                             "type": "thinking",
                             "stage": "funnel_builder",
                             "content": thinking,
                             "ts": datetime.now(timezone.utc).isoformat(),
-                        }
+                        },
                     )
         elif isinstance(message, ResultMessage):
             if message.subtype == "success":
@@ -297,14 +407,15 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
         "pages": selected_pages,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
-    state["progress"].append(
+    await emit_progress_event(
+        state,
         {
             "type": "done",
             "stage": "funnel_builder",
             "message": f"Funnel built: {', '.join(selected_pages)}",
             "ts": datetime.now(timezone.utc).isoformat(),
             "done": True,
-        }
+        },
     )
 
     return state

@@ -10,7 +10,7 @@ from slowapi import _rate_limit_exceeded_handler
 from app.config import settings
 from app.database import get_last_connection_error, test_connection
 from app.limiter import limiter
-from app.routers import health, offers, webhooks, workflow_runs
+from app.routers import health, jobs, offers, webhooks, workflow_runs
 
 logger = logging.getLogger(__name__)
 
@@ -47,3 +47,4 @@ app.include_router(health.router)
 app.include_router(webhooks.router)
 app.include_router(offers.router)
 app.include_router(workflow_runs.router)
+app.include_router(jobs.router)
