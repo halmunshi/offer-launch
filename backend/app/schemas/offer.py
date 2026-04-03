@@ -86,6 +86,10 @@ class OfferCreate(BaseSchema):
     intake_data: IntakeData
 
 
+class OfferUpdate(BaseSchema):
+    name: str = Field(min_length=1, max_length=100)
+
+
 class OfferResponse(UUIDSchema, TimestampSchema):
     user_id: uuid.UUID
     workspace_id: uuid.UUID | None = None

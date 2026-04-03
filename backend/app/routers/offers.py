@@ -1,14 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.middleware.clerk_auth import get_current_user
+from app.models.enums import OfferStatus
 from app.models.offer import Offer
 from app.models.user import User
-from app.schemas.offer import OfferCreate, OfferResponse
+from app.schemas.offer import OfferCreate, OfferResponse, OfferUpdate
 
 router = APIRouter(prefix="/offers", tags=["offers"])
 
@@ -40,7 +41,10 @@ async def list_offers(
 ) -> list[Offer]:
     result = await db.execute(
         select(Offer)
-        .where(Offer.user_id == current_user.id)
+        .where(
+            Offer.user_id == current_user.id,
+            Offer.status != OfferStatus.archived,
+        )
         .order_by(desc(Offer.created_at))
     )
     return list(result.scalars().all())
@@ -63,3 +67,47 @@ async def get_offer(
         raise HTTPException(status_code=404, detail="Offer not found")
 
     return offer
+
+
+@router.patch("/{offer_id}", response_model=OfferResponse)
+async def update_offer(
+    offer_id: uuid.UUID,
+    payload: OfferUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Offer:
+    result = await db.execute(
+        select(Offer).where(
+            Offer.id == offer_id,
+            Offer.user_id == current_user.id,
+        )
+    )
+    offer = result.scalar_one_or_none()
+    if offer is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+
+    offer.name = payload.name.strip()
+    await db.commit()
+    await db.refresh(offer)
+    return offer
+
+
+@router.delete("/{offer_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def archive_offer(
+    offer_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    result = await db.execute(
+        select(Offer).where(
+            Offer.id == offer_id,
+            Offer.user_id == current_user.id,
+        )
+    )
+    offer = result.scalar_one_or_none()
+    if offer is None:
+        raise HTTPException(status_code=404, detail="Offer not found")
+
+    offer.status = OfferStatus.archived
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

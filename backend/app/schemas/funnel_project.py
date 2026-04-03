@@ -1,3 +1,4 @@
+from datetime import datetime
 import uuid
 
 from pydantic import Field
@@ -21,4 +22,10 @@ class FunnelProjectResponse(UUIDSchema, TimestampSchema):
     funnel_id: uuid.UUID
     user_id: uuid.UUID
     files: dict
+    session_summary: str | None = None
     boilerplate_version: str
+
+
+class FilePatchResponse(BaseSchema):
+    path: str
+    updated_at: datetime

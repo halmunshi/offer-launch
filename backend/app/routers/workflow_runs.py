@@ -24,7 +24,7 @@ router = APIRouter(prefix="/workflow-runs", tags=["workflow-runs"])
 
 
 @router.post("", response_model=WorkflowRunResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("3/hour;10/day")
+@limiter.limit("5/hour", error_message="Generation limit reached. Try again later.")
 async def create_workflow_run(
     request: Request,
     payload: WorkflowRunCreate,
