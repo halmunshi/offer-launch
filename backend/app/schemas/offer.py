@@ -82,12 +82,12 @@ class IntakeData(BaseSchema):
 
 
 class OfferCreate(BaseSchema):
-    name: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=100, description="Offer display name")
     intake_data: IntakeData
 
 
 class OfferUpdate(BaseSchema):
-    name: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=100, description="New offer display name")
 
 
 class OfferResponse(UUIDSchema, TimestampSchema):

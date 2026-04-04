@@ -23,7 +23,22 @@ STALE_PENDING_RUN_TIMEOUT_MINUTES = 30
 router = APIRouter(prefix="/workflow-runs", tags=["workflow-runs"])
 
 
-@router.post("", response_model=WorkflowRunResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=WorkflowRunResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Start workflow run",
+    description=(
+        "Creates a new funnel generation run, creates copywriter and funnel-builder jobs, "
+        "then dispatches background processing."
+    ),
+    responses={
+        403: {"description": "Plan limit reached for free tier."},
+        404: {"description": "Offer not found."},
+        409: {"description": "Another generation run is already active."},
+        500: {"description": "Failed to dispatch workflow run."},
+    },
+)
 @limiter.limit("5/hour", error_message="Generation limit reached. Try again later.")
 async def create_workflow_run(
     request: Request,
@@ -206,7 +221,15 @@ async def create_workflow_run(
     )
 
 
-@router.get("/{workflow_run_id}", response_model=WorkflowRunResponse)
+@router.get(
+    "/{workflow_run_id}",
+    response_model=WorkflowRunResponse,
+    summary="Get workflow run",
+    description="Returns workflow status with associated funnel and job IDs.",
+    responses={
+        404: {"description": "Workflow run or related funnel not found."},
+    },
+)
 async def get_workflow_run(
     workflow_run_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

@@ -47,7 +47,13 @@ def _should_close_stream(event: dict, stream_agent_type: AgentType) -> bool:
     return event.get("done") is True or event_type in {"done", "error"}
 
 
-@router.get("/{job_id}", response_model=JobResponse)
+@router.get(
+    "/{job_id}",
+    response_model=JobResponse,
+    summary="Get job status",
+    description="Returns one job and its persisted progress payload.",
+    responses={404: {"description": "Job not found."}},
+)
 async def get_job(
     job_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -66,7 +72,18 @@ async def get_job(
     return job
 
 
-@router.get("/{job_id}/stream")
+@router.get(
+    "/{job_id}/stream",
+    summary="Stream job progress",
+    description=(
+        "Server-sent events stream that replays persisted progress and follows live Redis "
+        "events until completion or error."
+    ),
+    responses={
+        200: {"description": "SSE stream opened."},
+        404: {"description": "Job not found for user."},
+    },
+)
 async def stream_job(
     job_id: uuid.UUID,
     request: Request,

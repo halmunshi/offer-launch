@@ -19,7 +19,13 @@ class FunnelUpdateRequest(BaseSchema):
     name: str = Field(min_length=1, max_length=255)
 
 
-@router.get("/{funnel_id}", response_model=FunnelResponse)
+@router.get(
+    "/{funnel_id}",
+    response_model=FunnelResponse,
+    summary="Get funnel by ID",
+    description="Returns a funnel owned by the authenticated user.",
+    responses={404: {"description": "Funnel not found."}},
+)
 async def get_funnel(
     funnel_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -37,7 +43,13 @@ async def get_funnel(
     return funnel
 
 
-@router.patch("/{funnel_id}", response_model=FunnelResponse)
+@router.patch(
+    "/{funnel_id}",
+    response_model=FunnelResponse,
+    summary="Update funnel name",
+    description="Updates the display name of an owned funnel.",
+    responses={404: {"description": "Funnel not found."}},
+)
 async def update_funnel(
     funnel_id: uuid.UUID,
     payload: FunnelUpdateRequest,
@@ -60,7 +72,12 @@ async def update_funnel(
     return funnel
 
 
-@router.get("", response_model=list[FunnelResponse])
+@router.get(
+    "",
+    response_model=list[FunnelResponse],
+    summary="List funnels",
+    description="Lists funnels for the authenticated user, newest first.",
+)
 async def list_funnels(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

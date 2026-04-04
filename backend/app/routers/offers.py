@@ -14,7 +14,14 @@ from app.schemas.offer import OfferCreate, OfferResponse, OfferUpdate
 router = APIRouter(prefix="/offers", tags=["offers"])
 
 
-@router.post("", response_model=OfferResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=OfferResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create an offer",
+    description="Creates a new offer container and stores normalized intake data.",
+    response_description="Created offer.",
+)
 async def create_offer(
     payload: OfferCreate,
     db: AsyncSession = Depends(get_db),
@@ -34,7 +41,13 @@ async def create_offer(
     return offer
 
 
-@router.get("", response_model=list[OfferResponse])
+@router.get(
+    "",
+    response_model=list[OfferResponse],
+    summary="List offers",
+    description="Lists active offers for the current user, newest first.",
+    response_description="List of offers.",
+)
 async def list_offers(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -50,7 +63,13 @@ async def list_offers(
     return list(result.scalars().all())
 
 
-@router.get("/{offer_id}", response_model=OfferResponse)
+@router.get(
+    "/{offer_id}",
+    response_model=OfferResponse,
+    summary="Get offer by ID",
+    description="Returns a single offer owned by the authenticated user.",
+    responses={404: {"description": "Offer not found."}},
+)
 async def get_offer(
     offer_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -69,7 +88,13 @@ async def get_offer(
     return offer
 
 
-@router.patch("/{offer_id}", response_model=OfferResponse)
+@router.patch(
+    "/{offer_id}",
+    response_model=OfferResponse,
+    summary="Update offer name",
+    description="Updates the offer display name for an owned offer.",
+    responses={404: {"description": "Offer not found."}},
+)
 async def update_offer(
     offer_id: uuid.UUID,
     payload: OfferUpdate,
@@ -92,7 +117,13 @@ async def update_offer(
     return offer
 
 
-@router.delete("/{offer_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{offer_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Archive offer",
+    description="Soft-archives an offer so it no longer appears in offer listings.",
+    responses={404: {"description": "Offer not found."}},
+)
 async def archive_offer(
     offer_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

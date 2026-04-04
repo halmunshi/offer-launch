@@ -13,7 +13,13 @@ from app.schemas.funnel_project import FilePatchRequest, FilePatchResponse, Funn
 router = APIRouter(prefix="/funnel-projects", tags=["funnel-projects"])
 
 
-@router.get("/{funnel_id}", response_model=FunnelProjectResponse)
+@router.get(
+    "/{funnel_id}",
+    response_model=FunnelProjectResponse,
+    summary="Get funnel project",
+    description="Returns JSONB-backed file tree and session state for a funnel.",
+    responses={404: {"description": "Funnel project not found."}},
+)
 async def get_funnel_project(
     funnel_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -31,7 +37,13 @@ async def get_funnel_project(
     return project
 
 
-@router.put("/{funnel_id}/files", response_model=FilePatchResponse)
+@router.put(
+    "/{funnel_id}/files",
+    response_model=FilePatchResponse,
+    summary="Patch a single project file",
+    description="Applies a targeted update to one file path inside funnel project JSONB.",
+    responses={404: {"description": "Funnel project not found."}},
+)
 async def update_funnel_project_file(
     funnel_id: uuid.UUID,
     payload: FilePatchRequest,

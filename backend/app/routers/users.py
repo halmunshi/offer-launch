@@ -20,12 +20,22 @@ class UserUpdateRequest(BaseSchema):
     full_name: str = Field(min_length=1, max_length=255)
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Get current user",
+    description="Returns the authenticated user profile from Clerk-linked identity.",
+)
 async def get_me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-@router.patch("/me", response_model=UserResponse)
+@router.patch(
+    "/me",
+    response_model=UserResponse,
+    summary="Update current user",
+    description="Updates editable profile fields for the authenticated user.",
+)
 async def update_me(
     payload: UserUpdateRequest,
     db: AsyncSession = Depends(get_db),
@@ -37,7 +47,12 @@ async def update_me(
     return current_user
 
 
-@router.get("/me/usage", response_model=UsageResponse)
+@router.get(
+    "/me/usage",
+    response_model=UsageResponse,
+    summary="Get usage summary",
+    description="Returns current funnel count, active offer count, and monthly run count.",
+)
 async def get_usage(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

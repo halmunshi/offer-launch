@@ -29,7 +29,14 @@ def _extract_email(data: dict[str, Any]) -> str | None:
     return first_email.get("email_address")
 
 
-@router.post("/clerk")
+@router.post(
+    "/clerk",
+    summary="Receive Clerk webhook",
+    description=(
+        "Verifies Svix signature and upserts or deletes users for Clerk lifecycle events."
+    ),
+    responses={400: {"description": "Invalid webhook signature."}},
+)
 async def clerk_webhook(request: Request, db: AsyncSession = Depends(get_db)) -> dict[str, str]:
     payload = await request.body()
 

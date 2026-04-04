@@ -1,12 +1,14 @@
 from datetime import datetime
 import uuid
 
+from pydantic import Field
+
 from app.models.enums import WorkflowStatus, WorkflowType
 from app.schemas.common import BaseSchema, UUIDSchema
 
 
 class WorkflowRunCreate(BaseSchema):
-    offer_id: uuid.UUID
+    offer_id: uuid.UUID = Field(description="Offer UUID to generate a funnel for")
 
 
 class WorkflowRunResponse(UUIDSchema):
