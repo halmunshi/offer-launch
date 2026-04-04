@@ -8,9 +8,22 @@ import anthropic
 ANTHROPIC_CLIENT = anthropic.Anthropic()
 MODEL = "claude-haiku-4-5-20251001"
 AGENTS_DIR = Path(__file__).resolve().parent
-BOILERPLATE_DIR = AGENTS_DIR.parent / "boilerplate"
-if not BOILERPLATE_DIR.exists():
-    BOILERPLATE_DIR = AGENTS_DIR.parents[2] / "boilerplate"
+
+
+def _resolve_boilerplate_dir() -> Path:
+    backend_root = AGENTS_DIR.parents[1]
+    repo_root = AGENTS_DIR.parents[2]
+    candidates = [
+        backend_root / "boilerplate",
+        repo_root / "boilerplate",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+BOILERPLATE_DIR = _resolve_boilerplate_dir()
 
 CONTEXT_WINDOW = 200_000
 SAFETY_BUFFER = 30_000
@@ -219,15 +232,7 @@ def build_component_manifest() -> str:
     """
     Builds a concise inventory from the actual boilerplate component directories.
     """
-
-    def resolve_boilerplate_dir() -> Path:
-        candidates = [BOILERPLATE_DIR]
-        for candidate in candidates:
-            if candidate.exists():
-                return candidate
-        return candidates[0]
-
-    boilerplate_dir = resolve_boilerplate_dir()
+    boilerplate_dir = BOILERPLATE_DIR
     ui_dir = boilerplate_dir / "src" / "components" / "ui"
     funnel_dir = boilerplate_dir / "src" / "components" / "funnel"
 

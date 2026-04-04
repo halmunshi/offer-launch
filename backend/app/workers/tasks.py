@@ -57,9 +57,21 @@ class MissingWorkflowContextError(ValueError):
     """Raised when workflow context rows are missing and task should be dropped."""
 
 
-def _load_boilerplate_files() -> dict:
+def _resolve_boilerplate_manifest_path() -> Path:
+    backend_root = Path(__file__).resolve().parents[2]
     repo_root = Path(__file__).resolve().parents[3]
-    manifest_path = repo_root / "boilerplate" / "manifest.py"
+    candidates = [
+        backend_root / "boilerplate" / "manifest.py",
+        repo_root / "boilerplate" / "manifest.py",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def _load_boilerplate_files() -> dict:
+    manifest_path = _resolve_boilerplate_manifest_path()
     if not manifest_path.exists():
         raise FileNotFoundError(f"Boilerplate manifest not found: {manifest_path}")
 

@@ -1,3 +1,77 @@
+"""
+Phase 3 Pipeline Verification Script
+====================================
+
+What this script tests
+----------------------
+This script validates the core async LangGraph generation pipeline directly, without
+hitting HTTP endpoints:
+
+1) Seeds a minimal relational chain in Neon (user/offer/workflow_run/funnel/funnel_project)
+2) Seeds `funnel_projects.files` from boilerplate manifest
+3) Runs `run_pipeline(state, workflow_run_id)` (copywriter -> funnel_builder)
+4) Verifies generated files were written back to Neon JSONB
+
+Primary pass criteria:
+- `/src/theme.ts` exists in `funnel_projects.files`
+- `/src/App.tsx` exists in `funnel_projects.files`
+- At least 3 page files exist under `/src/pages/*.tsx`
+
+
+When to run this script
+-----------------------
+Use this as a backend pipeline smoke test after changes to:
+- LangGraph wiring
+- copywriter/funnel_builder nodes
+- boilerplate pathing/manifest loading
+- DB write tools/hooks that impact file generation
+
+
+Prerequisites
+-------------
+- Python venv active in `backend/`
+- Dependencies installed (`pip install -r requirements.txt`)
+- Required env vars set in `backend/.env`:
+  - `DATABASE_URL`
+  - `DATABASE_URL_DIRECT`
+  - `ANTHROPIC_API_KEY`
+
+Optional env vars for deterministic IDs:
+- `TEST_USER_ID`
+- `TEST_OFFER_ID`
+- `TEST_WORKFLOW_RUN_ID`
+- `TEST_FUNNEL_ID`
+
+
+Commands to run
+---------------
+Minimal run (pipeline only):
+
+    cd backend
+    source .venv/bin/activate
+    python scripts/test_pipeline.py
+
+Optional stack commands (not required for this script, useful for full app checks):
+
+    # API server (separate terminal)
+    uvicorn app.main:app --reload --port 8000
+
+    # Celery worker (separate terminal)
+    celery -A app.workers.celery_app worker --loglevel=info
+
+Expected output
+---------------
+- Prints four phases: seed -> build state -> run pipeline -> verify files
+- Shows `RESULT: PASSED` when verification criteria are met
+- Lists all files in `funnel_projects.files` and tags generated vs boilerplate
+- Prints progress events emitted during run
+
+Failure behavior
+----------------
+- Exits with status code 1 on any setup/pipeline/verification failure
+- Prints traceback for pipeline exceptions
+"""
+
 import asyncio
 from datetime import datetime, timezone
 import importlib.util
@@ -26,8 +100,13 @@ from app.pipeline.graph import run_pipeline
 
 
 def _load_boilerplate_files() -> dict:
+    backend_root = Path(__file__).resolve().parents[1]
     repo_root = Path(__file__).resolve().parents[2]
-    manifest_path = repo_root / "boilerplate" / "manifest.py"
+    candidates = [
+        backend_root / "boilerplate" / "manifest.py",
+        repo_root / "boilerplate" / "manifest.py",
+    ]
+    manifest_path = next((candidate for candidate in candidates if candidate.exists()), candidates[0])
     if not manifest_path.exists():
         raise FileNotFoundError(f"Boilerplate manifest not found at {manifest_path}")
 
@@ -266,10 +345,12 @@ async def verify_funnel_files(db: AsyncSession, funnel_id: str) -> dict:
 
 
 async def main() -> None:
+    # These constants are intentionally not used directly because environment
+    # variables below are the source of truth for deterministic test IDs.
+    TEST_USER_ID = "2914d88c-a2ef-4505-8bd5-1325d561ae8f"
+    TEST_FUNNEL_ID = "f7946932-2ecb-4ae1-8c8d-34ec9042370f"
+    _ = (TEST_USER_ID, TEST_FUNNEL_ID)
 
-    TEST_USER_ID="2914d88c-a2ef-4505-8bd5-1325d561ae8f" 
-    TEST_FUNNEL_ID="f7946932-2ecb-4ae1-8c8d-34ec9042370f"
-    
     print("=" * 60)
     print("OfferLaunch - Phase 3 Pipeline Test")
     print("=" * 60)
