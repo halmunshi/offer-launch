@@ -16,17 +16,18 @@ greenlet==3.0.3
 psycopg2-binary==2.9.9
 
 # Agent orchestration
-langgraph
-langgraph-checkpoint-postgres
+langgraph==1.1.6
+langgraph-checkpoint-postgres==3.0.5
 
 # Agent execution
 claude-agent-sdk
 
 # LLM
-anthropic==0.28.0
+anthropic
 
 # Observability
-sentry-sdk[fastapi]==1.45.0
+sentry-sdk[fastapi]
+langsmith[otel]==0.7.25
 langfuse
 
 # Job queue
@@ -57,3 +58,7 @@ python-multipart==0.0.9
 
 # Cloudflare R2 (v2 — binary assets only)
 boto3==1.34.0
+
+# Testing
+pytest
+pytest-asyncio

@@ -3,18 +3,21 @@ import atexit
 import importlib.util
 import json
 import logging
+import time
 from pathlib import Path
 from uuid import uuid4
 
+from langfuse import propagate_attributes
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.agents.state import AgentState
 from app.config import settings
 from app.pipeline.graph import run_pipeline
+from app.services.langfuse_client import get_langfuse
 from app.workers.celery_app import celery_app
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("offerlaunch.worker")
 
 _worker_loop: asyncio.AbstractEventLoop | None = None
 
@@ -127,9 +130,22 @@ def generate_funnel_task(self, workflow_run_id: str):
     """
     Run the funnel generation pipeline as a background job.
     """
+    start_time = time.time()
+    funnel_id_for_log: str | None = None
+
     with SyncSessionLocal() as db:
         try:
             workflow_run, offer, funnel, jobs = _load_workflow_context(db, workflow_run_id)
+            funnel_id_for_log = str(funnel["id"])
+
+            logger.info(
+                "Pipeline started",
+                extra={
+                    "workflow_run_id": workflow_run_id,
+                    "funnel_id": funnel_id_for_log,
+                    "status": "running",
+                },
+            )
 
             db.execute(
                 text(
@@ -157,8 +173,6 @@ def generate_funnel_task(self, workflow_run_id: str):
                 {"wrid": workflow_run_id},
             )
             db.commit()
-
-            logger.info("Pipeline starting: %s", workflow_run_id)
 
             boilerplate_files = _load_boilerplate_files()
             db.execute(
@@ -224,7 +238,23 @@ def generate_funnel_task(self, workflow_run_id: str):
                 "error": None,
             }
 
-            final_state = _run_async(run_pipeline(state, workflow_run_id))
+            langfuse_client = get_langfuse()
+            if langfuse_client is not None:
+                with propagate_attributes(
+                    user_id=str(workflow_run["user_id"]),
+                    session_id=workflow_run_id,
+                    tags=["funnel_generation", str(state["funnel_type"])],
+                    metadata={
+                        "workflow_run_id": workflow_run_id,
+                        "offer_id": str(offer["id"]),
+                        "funnel_id": str(funnel["id"]),
+                        "funnel_type": str(state["funnel_type"]),
+                        "theme_direction": str(state["theme_direction"]),
+                    },
+                ):
+                    final_state = _run_async(run_pipeline(state, workflow_run_id))
+            else:
+                final_state = _run_async(run_pipeline(state, workflow_run_id))
 
             db.execute(
                 text(
@@ -263,7 +293,16 @@ def generate_funnel_task(self, workflow_run_id: str):
             )
             db.commit()
 
-            logger.info("Pipeline complete: %s", workflow_run_id)
+            duration_ms = int((time.time() - start_time) * 1000)
+            logger.info(
+                "Pipeline completed",
+                extra={
+                    "workflow_run_id": workflow_run_id,
+                    "funnel_id": funnel_id_for_log,
+                    "duration_ms": duration_ms,
+                    "status": "done",
+                },
+            )
             return {"workflow_run_id": workflow_run_id, "status": "done"}
 
         except Exception as exc:
@@ -276,7 +315,17 @@ def generate_funnel_task(self, workflow_run_id: str):
                     "reason": str(exc),
                 }
 
-            logger.error("Pipeline failed %s: %s", workflow_run_id, exc)
+            duration_ms = int((time.time() - start_time) * 1000)
+            logger.error(
+                "Pipeline failed",
+                extra={
+                    "workflow_run_id": workflow_run_id,
+                    "funnel_id": funnel_id_for_log,
+                    "duration_ms": duration_ms,
+                    "status": "error",
+                },
+                exc_info=True,
+            )
             try:
                 db.rollback()
                 db.execute(

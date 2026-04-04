@@ -97,6 +97,7 @@ from sqlalchemy.orm import sessionmaker
 from app.agents.state import AgentState
 from app.config import settings
 from app.pipeline.graph import run_pipeline
+from app.services.langfuse_client import init_langfuse
 
 
 def _load_boilerplate_files() -> dict:
@@ -354,6 +355,10 @@ async def main() -> None:
     print("=" * 60)
     print("OfferLaunch - Phase 3 Pipeline Test")
     print("=" * 60)
+
+    # Initialize observability so Claude SDK instrumentation and OTLP routing
+    # are configured consistently with app/worker startup.
+    init_langfuse()
 
     database_url = settings.DATABASE_URL
     database_url_direct = settings.DATABASE_URL_DIRECT

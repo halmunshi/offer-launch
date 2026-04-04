@@ -26,3 +26,4 @@ async def health_check_detailed() -> dict[str, str]:
         "db": "error",
         "detail": get_last_connection_error() or "Unknown database error",
     }
+

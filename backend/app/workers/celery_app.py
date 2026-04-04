@@ -1,9 +1,16 @@
 import ssl
+import logging
 
 import certifi
-from celery import Celery
+import sentry_sdk
+from celery import Celery, signals
+from sentry_sdk.integrations.celery import CeleryIntegration
 
 from app.config import settings
+from app.logging_config import setup_logging
+from app.services.langfuse_client import init_langfuse
+
+logger = logging.getLogger(__name__)
 
 celery_app = Celery("offerlaunch")
 
@@ -35,3 +42,23 @@ celery_app.config_from_object(
         "imports": ["app.workers.tasks"],
     }
 )
+
+
+@signals.celeryd_init.connect
+def _initialize_worker_observability(*args, **kwargs) -> None:
+    _ = (args, kwargs)
+    setup_logging()
+
+    if settings.SENTRY_DSN:
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            environment=settings.ENVIRONMENT,
+            traces_sample_rate=0.2,
+            send_default_pii=False,
+            integrations=[CeleryIntegration(propagate_traces=True)],
+        )
+        logger.info("Sentry initialized for Celery worker")
+
+    langfuse_client = init_langfuse()
+    if langfuse_client is not None:
+        logger.info("Langfuse initialization attempted in Celery worker")

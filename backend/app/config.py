@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
     ENVIRONMENT: str = "development"
+    SENTRY_DSN: str | None = None
+    LANGFUSE_PUBLIC_KEY: str | None = None
+    LANGFUSE_SECRET_KEY: str | None = None
+    LANGFUSE_BASE_URL: str = "https://us.cloud.langfuse.com"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
