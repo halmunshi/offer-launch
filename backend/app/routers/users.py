@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +17,19 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 class UserUpdateRequest(BaseSchema):
-    full_name: str = Field(min_length=1, max_length=255)
+    full_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        validation_alias=AliasChoices("full_name", "fullName"),
+    )
+    business_type: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        validation_alias=AliasChoices("business_type", "businessType"),
+    )
+    industry: str | None = Field(default=None, min_length=1, max_length=255)
 
 
 @router.get(
@@ -41,7 +53,15 @@ async def update_me(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> User:
-    current_user.full_name = payload.full_name.strip()
+    if payload.full_name is not None:
+        current_user.full_name = payload.full_name.strip()
+
+    if payload.business_type is not None:
+        current_user.business_type = payload.business_type.strip()
+
+    if payload.industry is not None:
+        current_user.industry = payload.industry.strip()
+
     await db.commit()
     await db.refresh(current_user)
     return current_user

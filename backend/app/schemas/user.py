@@ -6,6 +6,8 @@ class UserResponse(UUIDSchema, TimestampSchema):
     clerk_id: str
     email: str
     full_name: str | None = None
+    business_type: str | None = None
+    industry: str | None = None
     avatar_url: str | None = None
     plan: UserPlan
 
