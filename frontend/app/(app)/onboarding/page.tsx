@@ -116,7 +116,7 @@ export default function UserOnboardingPage() {
 
       setVisualProgress(100);
       window.setTimeout(() => {
-        router.push("/dashboard");
+        router.push("/home");
       }, 260);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Unable to save onboarding details.");

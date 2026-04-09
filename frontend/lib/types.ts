@@ -16,8 +16,10 @@ export interface Funnel {
   workflowRunId: string | null;
   name: string;
   funnelType: "lead_generation" | "call_funnel" | "direct_sales";
+  style: string;
+  integrations: Record<string, unknown>;
   theme: string;
-  status: "draft" | "generating" | "ready" | "error";
+  status: "draft" | "generating" | "ready" | "published" | "error";
 }
 
 export interface FunnelProject {
@@ -71,19 +73,20 @@ export interface OfferIntakeData {
 }
 
 export interface FunnelSetupData {
+  funnelName: string;
   funnelType: "lead_generation" | "call_funnel" | "direct_sales";
   integrations: FunnelIntegrations;
-  themeDirection: string;
-  copyStyle: string;
+  funnelStyle: "high_converting" | "modern_authority";
 }
 
 export interface FunnelIntegrations {
-  leadMagnetReady?: boolean;
   leadMagnetType?: string;
-  hasCalendar?: boolean;
+  leadMagnetDescription?: string;
+  leadMagnetReady?: boolean;
+  hasVsl?: boolean;
+  vslEmbed?: string;
   calendarProvider?: string;
   calendarEmbed?: string;
-  hasPaymentProcessor?: boolean;
   paymentProcessor?: string;
-  wantsUpsells?: boolean;
+  paymentEmbed?: string;
 }

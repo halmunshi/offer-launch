@@ -10,8 +10,8 @@ export default function SignUpPage() {
           <span className="text-[#f26522]">Launch</span>
         </Link>
         <SignUp
-          forceRedirectUrl="/dashboard"
-          fallbackRedirectUrl="/dashboard"
+          forceRedirectUrl="/home"
+          fallbackRedirectUrl="/home"
           signInUrl="/sign-in"
           appearance={{
             variables: {

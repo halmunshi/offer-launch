@@ -1,22 +1,40 @@
 "use client";
 
-import { SignOutButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignOutButton, useUser } from "@clerk/nextjs";
 import { useAuth } from "@clerk/nextjs";
 import {
   BarChart3,
-  ChevronDown,
+  ChevronsUpDown,
   Loader2,
-  LayoutDashboard,
+  House,
   Megaphone,
   Settings,
-  Sparkles,
-  Funnel
+  Funnel,
+  LayoutGrid
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { api } from "@/lib/api";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const ONBOARDING_CACHE_PREFIX = "offerlaunch:onboarding:";
 
@@ -24,32 +42,6 @@ type UserMeResponse = {
   id: string;
   full_name: string | null;
 };
-
-function NavItem({
-  href,
-  icon: Icon,
-  label,
-  active,
-}: {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  active: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-3 rounded-button px-3 py-2 text-sm font-medium transition-colors ${
-        active
-          ? "bg-selected text-orange ring-1 ring-orange/25"
-          : "text-secondary hover:bg-surface hover:text-primary"
-      }`}
-    >
-      <Icon className="h-4 w-4" />
-      <span>{label}</span>
-    </Link>
-  );
-}
 
 export default function AppLayout({
   children,
@@ -61,10 +53,14 @@ export default function AppLayout({
   const { getToken, userId, isLoaded } = useAuth();
   const { user } = useUser();
   const plan = typeof user?.publicMetadata?.plan === "string" ? user.publicMetadata.plan : "Free";
+  const userInitial = (user?.firstName ?? user?.fullName ?? "O").charAt(0).toUpperCase();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const isOnboardingRoute = pathname === "/onboarding";
+  const isOfferOnboardingRoute = pathname === "/offers/new";
+  const isFunnelOnboardingRoute = pathname === "/funnels/new";
+  const isFullCanvasOnboardingRoute = isOfferOnboardingRoute || isFunnelOnboardingRoute;
 
   useEffect(() => {
     function onDocumentMouseDown(event: MouseEvent) {
@@ -105,7 +101,7 @@ export default function AppLayout({
         if (!isCancelled) {
           setIsCheckingOnboarding(false);
           if (isOnboardingRoute) {
-            router.replace("/dashboard");
+            router.replace("/home");
           }
         }
         return;
@@ -131,7 +127,7 @@ export default function AppLayout({
         if (!isCancelled) {
           setIsCheckingOnboarding(false);
           if (hasName && isOnboardingRoute) {
-            router.replace("/dashboard");
+            router.replace("/home");
           }
           if (!hasName && !isOnboardingRoute) {
             router.replace("/onboarding");
@@ -170,81 +166,147 @@ export default function AppLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-page text-primary">
-      <aside className="sticky top-0 flex h-screen w-[240px] shrink-0 flex-col border-r-[1.5px] border-border bg-card px-5 py-6">
-        <Link href="/dashboard" className="mb-8 text-[18px] font-extrabold tracking-[-0.02em]">
-          <span className="text-primary">Offer</span>
-          <span className="text-[#f26522]">Launch</span>
-        </Link>
+    <TooltipProvider>
+      <SidebarProvider className="min-h-screen bg-page text-primary">
+      <Sidebar collapsible="icon">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild size="lg">
+                <Link href="/home" className="font-extrabold tracking-[-0.02em]">
+                  <span className="text-[15px] text-primary">Offer</span>
+                  <span className="text-[15px] text-[#f26522]">Launch</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
 
-        <nav className="space-y-1">
-          <NavItem
-            href="/dashboard"
-            icon={LayoutDashboard}
-            label="Dashboard"
-            active={pathname === "/dashboard"}
-          />
-          <NavItem href="/offers" icon={Sparkles} label="Offers" active={pathname === "/offers"} />
-          <NavItem href="/funnels" icon={Funnel} label="Funnels" active={pathname === "/funnels"} />
-        </nav>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Home" isActive={pathname === "/home" || pathname === "/dashboard"}>
+                    <Link href="/home">
+                      <House />
+                      <span>Home</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
-        <div className="my-6 border-t border-border" />
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Offers" isActive={pathname.startsWith("/offers")}>
+                    <Link href="/offers">
+                      <LayoutGrid />
+                      <span>Offers</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
-        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-[0.06em] text-muted">Coming soon</p>
-        <div className="space-y-1">
-          <div className="flex items-center gap-3 rounded-button px-3 py-2 text-sm text-muted">
-            <Megaphone className="h-4 w-4" />
-            <span>Campaigns</span>
-          </div>
-          <div className="flex items-center gap-3 rounded-button px-3 py-2 text-sm text-muted">
-            <BarChart3 className="h-4 w-4" />
-            <span>Analytics</span>
-          </div>
-        </div>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Funnels" isActive={pathname === "/funnels"}>
+                    <Link href="/funnels">
+                      <Funnel />
+                      <span>Funnels</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-        <div className="mt-auto space-y-3">
-          <NavItem href="/settings" icon={Settings} label="Settings" active={pathname === "/settings"} />
+          <SidebarSeparator />
 
-          <div ref={userMenuRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setIsUserMenuOpen((prev) => !prev)}
-              className="flex w-full items-center justify-between rounded-card border border-border bg-surface px-3 py-2.5 text-left"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-primary">
-                  {user?.fullName ?? user?.firstName ?? "OfferLaunch User"}
-                </p>
-                <span className="inline-flex items-center rounded-pill bg-status-draft-bg px-2 py-0.5 text-[11px] font-semibold text-status-draft-text">
-                  {String(plan)}
-                </span>
+          <SidebarGroup>
+            <SidebarGroupLabel>Coming soon</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton disabled>
+                    <Megaphone />
+                    <span>Campaigns</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton disabled>
+                    <BarChart3 />
+                    <span>Analytics</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === "/settings"}>
+                <Link href="/settings">
+                  <Settings />
+                  <span>Settings</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+            <SidebarMenuItem className="relative">
+              <div ref={userMenuRef} className="relative">
+                <SidebarMenuButton
+                  size="lg"
+                  onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <span className="text-xs font-semibold">{userInitial}</span>
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                    <span className="truncate font-medium">
+                      {user?.fullName ?? user?.firstName ?? "OfferLaunch User"}
+                    </span>
+                    <span className="truncate text-xs text-muted">{String(plan)}</span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                </SidebarMenuButton>
+
+                {isUserMenuOpen ? (
+                  <div className="absolute right-0 bottom-[calc(100%+8px)] z-20 min-w-40 rounded-input border border-border bg-card p-1 shadow-sm group-data-[collapsible=icon]:right-[calc(-100%-8px)]">
+                    <SignOutButton redirectUrl="/sign-in">
+                      <button
+                        type="button"
+                        className="block w-full rounded-button px-3 py-2 text-left text-sm font-medium text-status-error-text transition-colors hover:bg-status-error-bg"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        Sign out
+                      </button>
+                    </SignOutButton>
+                  </div>
+                ) : null}
               </div>
-              <div className="flex items-center gap-1">
-                <UserButton />
-                <ChevronDown className="h-4 w-4 text-muted" />
-              </div>
-            </button>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
 
-            {isUserMenuOpen ? (
-              <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 z-20 rounded-input border border-border bg-card p-1 shadow-sm">
-                <SignOutButton redirectUrl="/sign-in">
-                  <button
-                    type="button"
-                    className="block w-full rounded-button px-3 py-2 text-left text-sm font-medium text-status-error-text transition-colors hover:bg-status-error-bg"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    Sign out
-                  </button>
-                </SignOutButton>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </aside>
+      <SidebarInset className={`h-screen bg-page ${isFullCanvasOnboardingRoute ? "overflow-hidden" : "overflow-y-auto"}`}>
+        {!isFullCanvasOnboardingRoute ? (
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2 px-3">
+              <SidebarTrigger className="-ml-1" />
+            </div>
+          </header>
+        ) : null}
 
-      <main className="h-screen flex-1 overflow-y-auto bg-page">
-        <div className="mx-auto w-full max-w-[960px] px-8 py-8 md:px-10">{children}</div>
-      </main>
-    </div>
+        {isFullCanvasOnboardingRoute ? (
+          children
+        ) : (
+          <div className="mx-auto w-full max-w-[960px] px-8 py-8 md:px-10">{children}</div>
+        )}
+      </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }

@@ -1,7 +1,10 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
+import { DM_Sans, Inter } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -22,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${dmSans.variable} h-full antialiased`}>
+      <html lang="en" className={cn("h-full", "antialiased", dmSans.variable, "font-sans", inter.variable)}>
         <body className="min-h-full bg-page font-sans text-primary">{children}</body>
       </html>
     </ClerkProvider>
