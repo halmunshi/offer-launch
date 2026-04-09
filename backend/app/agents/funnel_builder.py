@@ -82,28 +82,49 @@ def _normalize_selected_pages(selected_pages: object, funnel_type: str) -> list[
     if pages:
         return pages
 
-    if funnel_type == "lead_magnet":
+    if funnel_type == "lead_generation":
         return ["opt_in", "thank_you"]
-    return ["vsl", "order", "thank_you"]
+    if funnel_type == "call_funnel":
+        return ["landing", "booking", "confirmation"]
+    return ["landing", "order", "thank_you"]
+
+
+def _resolve_style_skill(funnel_style: str) -> str:
+    mapping = {
+        "high_converting": "direct-response",
+        "modern_authority": "clean-authority",
+    }
+    return mapping.get(funnel_style, funnel_style.replace("_", "-"))
+
+
+def _resolve_funnel_type_skill(funnel_type: str) -> str:
+    mapping = {
+        "lead_generation": "lead-magnet",
+        "call_funnel": "vsl",
+        "direct_sales": "vsl",
+    }
+    return mapping.get(funnel_type, "vsl")
 
 
 def _build_generation_instruction(
     selected_pages: list[str],
     funnel_type: str,
-    theme_direction: str,
+    funnel_style: str,
 ) -> str:
     page_list = "\n".join(f"  - {page}" for page in selected_pages)
+    theme_skill = _resolve_style_skill(funnel_style)
+    funnel_type_skill = _resolve_funnel_type_skill(funnel_type)
     return f"""
 === BUILD INSTRUCTIONS ===
 Funnel type: {funnel_type}
-Theme direction: {theme_direction}
+Funnel style: {funnel_style}
 Pages to build (in this order):
 {page_list}
 
 Generation order - strictly follow this:
 1. Write /src/theme.ts first (all pages import from it)
-2. Load the relevant theme skill for {theme_direction}
-3. Load the funnel-type skill for {funnel_type}
+2. Load the relevant theme skill for {theme_skill}
+3. Load the funnel-type skill for {funnel_type_skill}
 4. Write each page in the order listed above
 5. Write /src/App.tsx last with routes for all pages
 
@@ -324,11 +345,19 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     )
 
     intake = state.get("offer_intake") or {}
-    selected_pages = _normalize_selected_pages(intake.get("selected_pages"), state.get("funnel_type", "vsl"))
-    funnel_type = str(state.get("funnel_type", "vsl"))
-    theme_direction = str(state.get("theme_direction", intake.get("theme", "direct-response")))
+    funnel_type = str(state.get("funnel_type", "lead_generation"))
+    selected_pages = _normalize_selected_pages(state.get("selected_pages"), funnel_type)
+    funnel_style = str(state.get("funnel_style", "high_converting"))
 
-    agent_context = build_agent_context(agent_type="funnel_builder", intake=intake)
+    agent_context = build_agent_context(
+        agent_type="funnel_builder",
+        intake=intake,
+        offer_industry=state.get("offer_industry"),
+        funnel_name=state.get("funnel_name"),
+        funnel_type=funnel_type,
+        funnel_style=funnel_style,
+        funnel_integrations=state.get("funnel_integrations"),
+    )
     copy_markdown = state.get("copywriter_output")
     copy_context = ""
     if isinstance(copy_markdown, str) and copy_markdown.strip():
@@ -337,7 +366,7 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
     page_instruction = _build_generation_instruction(
         selected_pages=selected_pages,
         funnel_type=funnel_type,
-        theme_direction=theme_direction,
+        funnel_style=funnel_style,
     )
 
     prompt_parts = [part for part in [agent_context, copy_context, page_instruction] if part]
@@ -404,6 +433,7 @@ async def funnel_builder_node(state: AgentState) -> AgentState:
         "status": "done",
         "result": result_text,
         "funnel_type": funnel_type,
+        "funnel_style": funnel_style,
         "pages": selected_pages,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }

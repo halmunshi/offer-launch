@@ -15,8 +15,12 @@ class AgentState(TypedDict):
     workflow_type: str
     active_agents: list[str]
     offer_intake: Optional[dict]
+    offer_industry: str
+    funnel_name: str
     funnel_type: str
-    theme_direction: str
+    funnel_style: str
+    funnel_integrations: dict
+    selected_pages: list[str]
     connected_platforms: dict
 
     # -- Agent outputs -----------------------------------------------

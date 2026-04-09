@@ -2,9 +2,9 @@ import uuid
 from uuid import uuid4
 from sqlalchemy import Text, DateTime, ForeignKey, Index
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import mapped_column, Mapped
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
 from app.database import Base
 from app.models.enums import FunnelType, FunnelStatus
 
@@ -47,7 +47,19 @@ class Funnel(Base):
     funnel_type: Mapped[FunnelType] = mapped_column(
         SAEnum(FunnelType, name="funnel_type", create_type=True),
         nullable=False,
-        server_default="vsl",
+        server_default="lead_generation",
+    )
+    style: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        server_default="high_converting",
+        comment="Selected funnel style direction from setup wizard.",
+    )
+    integrations: Mapped[dict] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+        comment="Normalized integration payload captured during funnel setup.",
     )
     theme: Mapped[str] = mapped_column(
         Text, nullable=False, server_default="bold-dark",

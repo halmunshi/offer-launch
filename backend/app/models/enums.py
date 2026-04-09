@@ -51,18 +51,16 @@ class JobStatus(str, enum.Enum):
 
 
 class FunnelType(str, enum.Enum):
-    vsl = "vsl"
-    lead_magnet = "lead_magnet"
-    webinar = "webinar"                # v2
-    product_launch = "product_launch"  # v2
-    book = "book"                      # v2
-    application = "application"        # v2
+    lead_generation = "lead_generation"
+    call_funnel = "call_funnel"
+    direct_sales = "direct_sales"
 
 
 class FunnelStatus(str, enum.Enum):
     draft = "draft"
     generating = "generating"
     ready = "ready"
+    published = "published"
     error = "error"
 
 

@@ -11,6 +11,8 @@ class FunnelResponse(UUIDSchema, TimestampSchema):
     user_id: uuid.UUID
     name: str
     funnel_type: FunnelType
+    style: str
+    integrations: dict
     theme: str
     status: FunnelStatus
     published_url: str | None = None

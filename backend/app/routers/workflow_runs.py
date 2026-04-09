@@ -23,6 +23,17 @@ STALE_PENDING_RUN_TIMEOUT_MINUTES = 30
 router = APIRouter(prefix="/workflow-runs", tags=["workflow-runs"])
 
 
+def _derive_selected_pages(funnel_type: FunnelType, integrations: dict) -> list[str]:
+    if funnel_type == FunnelType.lead_generation:
+        return ["opt_in", "thank_you"]
+
+    if funnel_type == FunnelType.call_funnel:
+        first_page = "vsl" if bool(integrations.get("has_vsl")) else "landing"
+        return [first_page, "booking", "confirmation"]
+
+    return ["landing", "order", "thank_you"]
+
+
 @router.post(
     "",
     response_model=WorkflowRunResponse,
@@ -130,14 +141,10 @@ async def create_workflow_run(
                 detail="A funnel generation is already in progress.",
             )
 
-        intake_data = offer.intake_data if isinstance(offer.intake_data, dict) else {}
-        funnel_type_value = str(intake_data.get("funnel_type") or FunnelType.vsl.value)
-        try:
-            funnel_type = FunnelType(funnel_type_value)
-        except ValueError:
-            funnel_type = FunnelType.vsl
-
-        theme = str(intake_data.get("theme") or intake_data.get("theme_direction") or "bold-dark")
+        funnel_name = payload.funnel_name.strip()
+        funnel_style = payload.funnel_style.strip()
+        integrations_payload = payload.integrations.model_dump(exclude_none=True)
+        integrations_payload["selected_pages"] = _derive_selected_pages(payload.funnel_type, integrations_payload)
 
         workflow_run = WorkflowRun(
             offer_id=offer.id,
@@ -153,9 +160,11 @@ async def create_workflow_run(
             offer_id=offer.id,
             workflow_run_id=workflow_run.id,
             user_id=current_user.id,
-            name=f"{offer.name} - {funnel_type.value} Funnel",
-            funnel_type=funnel_type,
-            theme=theme,
+            name=funnel_name,
+            funnel_type=payload.funnel_type,
+            style=funnel_style,
+            integrations=integrations_payload,
+            theme=funnel_style,
             status=FunnelStatus.generating,
         )
         db.add(funnel)

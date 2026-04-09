@@ -33,6 +33,11 @@ HISTORY_BUDGET = 150_000
 def build_agent_context(
     agent_type: str,
     intake: Optional[dict] = None,
+    offer_industry: Optional[str] = None,
+    funnel_name: Optional[str] = None,
+    funnel_type: Optional[str] = None,
+    funnel_style: Optional[str] = None,
+    funnel_integrations: Optional[dict] = None,
     copywriter_output: Optional[str] = None,
     analyst_output: Optional[dict] = None,
     session_summary: Optional[str] = None,
@@ -43,7 +48,10 @@ def build_agent_context(
     """
 
     def safe(val: object, max_len: int = 2000) -> str:
-        return str(val).strip()[:max_len] if val else ""
+        if val is None:
+            return ""
+        text = str(val).strip()
+        return text[:max_len] if text else ""
 
     known_agents = {
         "copywriter",
@@ -73,16 +81,10 @@ def build_agent_context(
             ("Offer name", intake.get("offer_name")),
             ("One-liner", intake.get("offer_one_liner")),
             ("Brand name", intake.get("brand_name")),
-            ("Industry", intake.get("industry")),
-            ("Role", intake.get("role")),
+            ("Industry", offer_industry),
             ("Price point", intake.get("price_point")),
-            ("Funnel type", intake.get("funnel_type")),
-            ("Copy style", intake.get("copy_style")),
-            ("Theme direction", intake.get("theme")),
             ("Whats included", intake.get("whats_included")),
-            ("Mechanism", intake.get("unique_mechanism")),
             ("Transformation", intake.get("transformation")),
-            ("Credibility", intake.get("credibility_proof")),
         ]
         for label, val in fields:
             if val:
@@ -91,20 +93,37 @@ def build_agent_context(
         parts.append("\n=== AUDIENCE ===")
         for label, val in [
             ("Ideal client", intake.get("ideal_client")),
-            ("Age range", intake.get("age_ranges")),
             ("Pain point", intake.get("pain_point")),
-            ("Awareness level", intake.get("awareness_level")),
         ]:
             if val:
                 parts.append(f"{label}: {safe(val)}")
 
-        parts.append("\n=== ASSETS & PROOF ===")
+    if include_intake and (funnel_name or funnel_type or funnel_style or funnel_integrations):
+        parts.append("\n=== FUNNEL SETUP ===")
         for label, val in [
-            ("Testimonials", intake.get("testimonials")),
-            ("Assets available", intake.get("assets_available")),
-            ("Guarantee", intake.get("guarantee")),
+            ("Funnel name", funnel_name),
+            ("Funnel type", funnel_type),
+            ("Funnel style", funnel_style),
         ]:
             if val:
+                parts.append(f"{label}: {safe(val)}")
+
+        if funnel_integrations:
+            integration_map = [
+                ("Lead magnet type", funnel_integrations.get("lead_magnet_type")),
+                ("Lead magnet description", funnel_integrations.get("lead_magnet_description")),
+                ("Lead magnet ready", funnel_integrations.get("lead_magnet_ready")),
+                ("Has VSL", funnel_integrations.get("has_vsl")),
+                ("VSL embed", funnel_integrations.get("vsl_embed")),
+                ("Calendar provider", funnel_integrations.get("calendar_provider")),
+                ("Calendar embed", funnel_integrations.get("calendar_embed")),
+                ("Payment processor", funnel_integrations.get("payment_processor")),
+                ("Payment embed", funnel_integrations.get("payment_embed")),
+                ("Selected pages", funnel_integrations.get("selected_pages")),
+            ]
+            for label, val in integration_map:
+                if val is None or val == "" or val == []:
+                    continue
                 parts.append(f"{label}: {safe(val)}")
 
     if copywriter_output and include_copywriter_output:

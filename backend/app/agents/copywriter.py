@@ -88,6 +88,9 @@ def _normalize_page_key(value: str) -> str:
 PAGE_ALIASES: dict[str, tuple[str, ...]] = {
     "presell": ("presell", "pre sell"),
     "vsl": ("vsl", "video sales letter"),
+    "landing": ("landing", "landing page", "sales page"),
+    "booking": ("booking", "book", "book call", "schedule"),
+    "confirmation": ("confirmation", "confirmed", "success", "booked"),
     "order": ("order",),
     "thank_you": ("thankyou", "thank you"),
     "upsell": ("upsell",),
@@ -98,8 +101,7 @@ PAGE_ALIASES: dict[str, tuple[str, ...]] = {
 }
 
 
-def _get_selected_pages(intake: dict) -> list[str]:
-    selected_pages = intake.get("selected_pages")
+def _get_selected_pages(selected_pages: object, funnel_type: str) -> list[str]:
     if not isinstance(selected_pages, list):
         selected_pages = []
 
@@ -113,19 +115,20 @@ def _get_selected_pages(intake: dict) -> list[str]:
         selected.append(normalized)
 
     if not selected:
-        funnel_type = str(intake.get("funnel_type", "")).strip().lower()
-        if funnel_type == "vsl":
-            return ["vsl", "order", "thank_you"]
-        if funnel_type == "lead_magnet":
+        normalized_type = str(funnel_type).strip().lower()
+        if normalized_type == "lead_generation":
             return ["opt_in", "thank_you"]
+        if normalized_type == "call_funnel":
+            return ["landing", "booking", "confirmation"]
+        if normalized_type == "direct_sales":
+            return ["landing", "order", "thank_you"]
+        return ["landing", "order", "thank_you"]
 
     return selected
 
 
-def _build_page_scope_instruction(intake: dict) -> str:
-    funnel_type = str(intake.get("funnel_type", "")).strip() or "unknown"
-    selected = _get_selected_pages(intake)
-    selected_list = ", ".join(selected) if selected else "none"
+def _build_page_scope_instruction(funnel_type: str, selected_pages: list[str]) -> str:
+    selected_list = ", ".join(selected_pages) if selected_pages else "none"
 
     return "\n".join(
         [
@@ -139,8 +142,8 @@ def _build_page_scope_instruction(intake: dict) -> str:
     )
 
 
-def _validate_selected_pages(markdown: str, intake: dict) -> None:
-    selected = set(_get_selected_pages(intake))
+def _validate_selected_pages(markdown: str, selected_pages: list[str]) -> None:
+    selected = set(selected_pages)
 
     headings = _extract_page_headings(markdown)
     normalized_headings = [_normalize_page_key(heading) for heading in headings]
@@ -175,6 +178,11 @@ async def copywriter_node(state: AgentState) -> AgentState:
     context = build_agent_context(
         agent_type="copywriter",
         intake=state.get("offer_intake"),
+        offer_industry=state.get("offer_industry"),
+        funnel_name=state.get("funnel_name"),
+        funnel_type=state.get("funnel_type"),
+        funnel_style=state.get("funnel_style"),
+        funnel_integrations=state.get("funnel_integrations"),
     )
     if not context:
         state["copywriter_output"] = None
@@ -189,8 +197,9 @@ async def copywriter_node(state: AgentState) -> AgentState:
         )
         return state
 
-    intake = state.get("offer_intake") or {}
-    context = f"{context}\n\n{_build_page_scope_instruction(intake)}"
+    funnel_type = str(state.get("funnel_type") or "unknown")
+    selected_pages = _get_selected_pages(state.get("selected_pages"), funnel_type)
+    context = f"{context}\n\n{_build_page_scope_instruction(funnel_type, selected_pages)}"
 
     api_key = _load_anthropic_api_key()
 
@@ -238,7 +247,7 @@ async def copywriter_node(state: AgentState) -> AgentState:
             "Copywriter output missing page headings. Expected Markdown with ## sections. Celery will retry."
         )
 
-    _validate_selected_pages(markdown_output, intake)
+    _validate_selected_pages(markdown_output, selected_pages)
 
     pages_written = _extract_page_headings(markdown_output)
 

@@ -216,7 +216,14 @@ def generate_funnel_task(self, workflow_run_id: str):
                 raise ValueError(f"expected copywriter and funnel_builder jobs for workflow_run: {workflow_run_id}")
 
             intake_data = offer["intake_data"] or {}
-            theme_direction = intake_data.get("theme_direction") or intake_data.get("theme") or "direct-response"
+            funnel_integrations = funnel["integrations"] if isinstance(funnel.get("integrations"), dict) else {}
+            selected_pages = funnel_integrations.get("selected_pages")
+            if not isinstance(selected_pages, list):
+                selected_pages = []
+            funnel_type_value = str(
+                getattr(funnel.get("funnel_type"), "value", funnel.get("funnel_type") or "lead_generation")
+            )
+            funnel_style_value = str(funnel.get("style") or "high_converting")
 
             state: AgentState = {
                 "workflow_run_id": workflow_run_id,
@@ -227,8 +234,12 @@ def generate_funnel_task(self, workflow_run_id: str):
                 "workflow_type": "funnel_only",
                 "active_agents": ["copywriter", "funnel_builder"],
                 "offer_intake": intake_data,
-                "funnel_type": intake_data.get("funnel_type", "vsl"),
-                "theme_direction": theme_direction,
+                "offer_industry": str(offer.get("industry") or "General"),
+                "funnel_name": str(funnel.get("name") or "Untitled Funnel"),
+                "funnel_type": funnel_type_value,
+                "funnel_style": funnel_style_value,
+                "funnel_integrations": funnel_integrations,
+                "selected_pages": [str(page) for page in selected_pages],
                 "connected_platforms": {},
                 "copywriter_output": None,
                 "funnel_builder_output": None,
@@ -249,7 +260,7 @@ def generate_funnel_task(self, workflow_run_id: str):
                         "offer_id": str(offer["id"]),
                         "funnel_id": str(funnel["id"]),
                         "funnel_type": str(state["funnel_type"]),
-                        "theme_direction": str(state["theme_direction"]),
+                        "funnel_style": str(state["funnel_style"]),
                     },
                 ):
                     final_state = _run_async(run_pipeline(state, workflow_run_id))

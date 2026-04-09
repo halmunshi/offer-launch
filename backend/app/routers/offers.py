@@ -32,7 +32,7 @@ async def create_offer(
     offer = Offer(
         user_id=current_user.id,
         name=payload.name,
-        industry=payload.intake_data.industry,
+        industry=(current_user.industry or "General").strip() or "General",
         intake_data=intake_data,
     )
     db.add(offer)
