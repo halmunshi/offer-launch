@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -26,7 +27,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" className={cn("h-full", "antialiased", dmSans.variable, "font-sans", inter.variable)}>
-        <body className="min-h-full bg-page font-sans text-primary">{children}</body>
+        <body className="min-h-full bg-page font-sans text-primary">
+          {children}
+          <Toaster position="bottom-right" />
+        </body>
       </html>
     </ClerkProvider>
   );

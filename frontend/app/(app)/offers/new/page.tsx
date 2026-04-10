@@ -103,7 +103,7 @@ export default function NewOfferPage() {
       const response = await api.post<{ id: string }, typeof payload>("/offers", payload, token);
       setVisualProgress(100);
       window.setTimeout(() => {
-        router.push(`/offers?offerId=${response.id}`);
+        router.push(`/offers/${response.id}`);
       }, 260);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Unable to create offer.");

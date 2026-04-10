@@ -36,12 +36,21 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const ONBOARDING_CACHE_PREFIX = "offerlaunch:onboarding:";
+type UserPlan = "free" | "standard" | "pro" | "agency";
 
 type UserMeResponse = {
   id: string;
   full_name: string | null;
+  plan: UserPlan;
 };
+
+function formatPlanLabel(plan: UserPlan | null): string {
+  if (!plan) {
+    return "Free";
+  }
+
+  return plan.charAt(0).toUpperCase() + plan.slice(1);
+}
 
 export default function AppLayout({
   children,
@@ -52,7 +61,8 @@ export default function AppLayout({
   const router = useRouter();
   const { getToken, userId, isLoaded } = useAuth();
   const { user } = useUser();
-  const plan = typeof user?.publicMetadata?.plan === "string" ? user.publicMetadata.plan : "Free";
+  const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
+  const planLabel = formatPlanLabel(userPlan);
   const userInitial = (user?.firstName ?? user?.fullName ?? "O").charAt(0).toUpperCase();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
@@ -94,37 +104,13 @@ export default function AppLayout({
         return;
       }
 
-      const storageKey = `${ONBOARDING_CACHE_PREFIX}${userId}`;
-      const cached = sessionStorage.getItem(storageKey);
-
-      if (cached === "complete") {
-        if (!isCancelled) {
-          setIsCheckingOnboarding(false);
-          if (isOnboardingRoute) {
-            router.replace("/home");
-          }
-        }
-        return;
-      }
-
-      if (cached === "incomplete") {
-        if (!isCancelled) {
-          setIsCheckingOnboarding(false);
-          if (!isOnboardingRoute) {
-            router.replace("/onboarding");
-          }
-        }
-        return;
-      }
-
       try {
         const token = await getToken();
         const me = await api.get<UserMeResponse>("/users/me", token);
         const hasName = typeof me.full_name === "string" && me.full_name.trim().length > 0;
 
-        sessionStorage.setItem(storageKey, hasName ? "complete" : "incomplete");
-
         if (!isCancelled) {
+          setUserPlan(me.plan);
           setIsCheckingOnboarding(false);
           if (hasName && isOnboardingRoute) {
             router.replace("/home");
@@ -134,10 +120,8 @@ export default function AppLayout({
           }
         }
       } catch {
-        if (userId) {
-          sessionStorage.setItem(storageKey, "incomplete");
-        }
         if (!isCancelled) {
+          setUserPlan(null);
           setIsCheckingOnboarding(false);
           if (!isOnboardingRoute) {
             router.replace("/onboarding");
@@ -266,7 +250,7 @@ export default function AppLayout({
                     <span className="truncate font-medium">
                       {user?.fullName ?? user?.firstName ?? "OfferLaunch User"}
                     </span>
-                    <span className="truncate text-xs text-muted">{String(plan)}</span>
+                    <span className="truncate text-xs text-muted">{planLabel}</span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>
@@ -291,7 +275,9 @@ export default function AppLayout({
         <SidebarRail />
       </Sidebar>
 
-      <SidebarInset className={`h-screen bg-page ${isFullCanvasOnboardingRoute ? "overflow-hidden" : "overflow-y-auto"}`}>
+      <SidebarInset
+        className={`h-screen bg-page ${isFullCanvasOnboardingRoute ? "overflow-hidden" : "overflow-y-auto [scrollbar-gutter:stable]"}`}
+      >
         {!isFullCanvasOnboardingRoute ? (
           <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
             <div className="flex items-center gap-2 px-3">
@@ -300,11 +286,7 @@ export default function AppLayout({
           </header>
         ) : null}
 
-        {isFullCanvasOnboardingRoute ? (
-          children
-        ) : (
-          <div className="mx-auto w-full max-w-[960px] px-8 py-8 md:px-10">{children}</div>
-        )}
+        {isFullCanvasOnboardingRoute ? children : <div className="p-4 md:p-10">{children}</div>}
       </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
