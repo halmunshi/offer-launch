@@ -111,7 +111,15 @@ async def update_offer(
     if offer is None:
         raise HTTPException(status_code=404, detail="Offer not found")
 
-    offer.name = payload.name.strip()
+    if payload.name is not None:
+        offer.name = payload.name.strip()
+
+    if payload.industry is not None:
+        offer.industry = payload.industry.strip() or offer.industry
+
+    if payload.intake_data is not None:
+        offer.intake_data = payload.intake_data.model_dump()
+
     await db.commit()
     await db.refresh(offer)
     return offer
@@ -120,11 +128,11 @@ async def update_offer(
 @router.delete(
     "/{offer_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Archive offer",
-    description="Soft-archives an offer so it no longer appears in offer listings.",
+    summary="Delete offer",
+    description="Permanently deletes an owned offer and cascades to related records.",
     responses={404: {"description": "Offer not found."}},
 )
-async def archive_offer(
+async def delete_offer(
     offer_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -139,6 +147,6 @@ async def archive_offer(
     if offer is None:
         raise HTTPException(status_code=404, detail="Offer not found")
 
-    offer.status = OfferStatus.archived
+    await db.delete(offer)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

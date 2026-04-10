@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from app.models.enums import OfferStatus
 from app.schemas.common import BaseSchema, TimestampSchema, UUIDSchema
@@ -22,7 +22,15 @@ class OfferCreate(BaseSchema):
 
 
 class OfferUpdate(BaseSchema):
-    name: str = Field(min_length=1, max_length=100, description="New offer display name")
+    name: str | None = Field(default=None, min_length=1, max_length=100, description="New offer display name")
+    industry: str | None = Field(default=None, min_length=1, max_length=100, description="Offer industry")
+    intake_data: IntakeData | None = None
+
+    @model_validator(mode="after")
+    def validate_at_least_one_field(self) -> "OfferUpdate":
+        if self.name is None and self.industry is None and self.intake_data is None:
+            raise ValueError("At least one field must be provided for update")
+        return self
 
 
 class OfferResponse(UUIDSchema, TimestampSchema):
