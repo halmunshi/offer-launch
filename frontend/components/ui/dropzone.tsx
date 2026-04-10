@@ -31,7 +31,9 @@ const renderBytes = (bytes: number) => {
 
 const DropzoneContext = createContext<DropzoneContextType | undefined>(undefined)
 
-export type DropzoneProps = Omit<DropzoneOptions, "onDrop"> & {
+const noop = () => {}
+
+export type DropzoneProps = Partial<Omit<DropzoneOptions, "onDrop">> & {
   src?: File[]
   className?: string
   onDrop?: (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => void
@@ -43,6 +45,7 @@ export const Dropzone = ({
   maxFiles = 1,
   maxSize,
   minSize,
+  multiple = maxFiles > 1,
   onDrop,
   onError,
   disabled,
@@ -52,12 +55,17 @@ export const Dropzone = ({
   ...props
 }: DropzoneProps) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    ...props,
     accept,
     maxFiles,
     maxSize,
     minSize,
+    multiple,
     onError,
     disabled,
+    onDragEnter: props.onDragEnter ?? noop,
+    onDragLeave: props.onDragLeave ?? noop,
+    onDragOver: props.onDragOver ?? noop,
     onDrop: (acceptedFiles, fileRejections, event) => {
       if (fileRejections.length > 0) {
         const message = fileRejections.at(0)?.errors.at(0)?.message
