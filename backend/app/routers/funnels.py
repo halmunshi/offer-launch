@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import Field
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -88,3 +88,30 @@ async def list_funnels(
         .order_by(desc(Funnel.created_at))
     )
     return list(result.scalars().all())
+
+
+@router.delete(
+    "/{funnel_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete funnel",
+    description="Permanently deletes an owned funnel and cascades to related project records.",
+    responses={404: {"description": "Funnel not found."}},
+)
+async def delete_funnel(
+    funnel_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    result = await db.execute(
+        select(Funnel).where(
+            Funnel.id == funnel_id,
+            Funnel.user_id == current_user.id,
+        )
+    )
+    funnel = result.scalar_one_or_none()
+    if funnel is None:
+        raise HTTPException(status_code=404, detail="Funnel not found")
+
+    await db.delete(funnel)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
