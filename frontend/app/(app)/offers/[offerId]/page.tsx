@@ -100,6 +100,29 @@ function formatFunnelType(value: string): string {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
+function formatEnumLabel(value: string): string {
+  const normalized = value.replaceAll("_", " ").trim();
+  if (!normalized) {
+    return "-";
+  }
+
+  return normalized.replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function getFunnelStatusTone(status: string): string {
+  const normalized = status.trim().toLowerCase();
+
+  if (normalized === "published") {
+    return "border-[#c8dcf5] bg-[#eaf4ff] text-[#3d6e9e]";
+  }
+
+  if (normalized === "error") {
+    return "border-[#f6c3c3] bg-[#fce8e8] text-[#b42318]";
+  }
+
+  return "border-[#ddd9d3] bg-[#f8f7f5] text-[#7e7972]";
+}
+
 function resolveIndustryOption(value: string): { selected: string; custom: string } {
   const normalized = value.trim().toLowerCase();
 
@@ -357,7 +380,7 @@ export default function OfferDetailsPage() {
 
   if (isLoading || !draft || !offer) {
     return (
-      <section className="space-y-5 px-3 md:px-10 xl:px-60">
+      <section className="space-y-6 px-3 md:px-8 xl:px-40 2xl:px-56">
         <Skeleton className="h-[360px] w-full rounded-card" />
         <Skeleton className="h-[220px] w-full rounded-card" />
       </section>
@@ -365,7 +388,7 @@ export default function OfferDetailsPage() {
   }
 
   return (
-    <section className="space-y-5 px-3 md:px-10 xl:px-60">
+    <section className="space-y-6 px-3 md:px-8 xl:px-40 2xl:px-56">
       <header className="flex items-center justify-between gap-3">
         <button
           type="button"
@@ -377,15 +400,15 @@ export default function OfferDetailsPage() {
         </button>
       </header>
 
-      <div className="rounded-card border border-border bg-transparent p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="rounded-card border border-border bg-transparent p-6 md:p-7">
+        <div className="mb-5 flex items-center justify-between gap-3">
           <div>
             <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-primary">Offer Details</h1>
             <p className="text-sm text-secondary">Last edited {formatDate(offer.updated_at)}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-[0.05em] text-[#3f3a34]">Offer Name</span>
             <Input value={draft.name} onChange={(event) => updateOfferName(event.target.value)} className="h-10" />
@@ -393,7 +416,7 @@ export default function OfferDetailsPage() {
 
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-[0.05em] text-[#3f3a34]">Created at</span>
-            <p className="h-10 pt-2.5 text-[15px] font-medium text-primary">
+            <p className="flex h-10 items-center text-[15px] font-medium text-primary">
               {formatDate(offer.created_at)} {formatTime(offer.created_at)}
             </p>
           </label>
@@ -410,7 +433,7 @@ export default function OfferDetailsPage() {
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-[0.05em] text-[#3f3a34]">Price point</span>
             <Select value={draft.intake_data.price_point || ""} onValueChange={(value) => updateIntakeField("price_point", value)}>
-              <SelectTrigger className="h-10">
+              <SelectTrigger className="w-full py-0" style={{ height: 40 }}>
                 <SelectValue placeholder="Select price point" />
               </SelectTrigger>
               <SelectContent>
@@ -451,7 +474,10 @@ export default function OfferDetailsPage() {
                   updateDraft({ industry: label });
                 }}
               >
-                <SelectTrigger className="h-10 w-[50%] min-w-[180px]">
+                <SelectTrigger
+                  className={`py-0 ${industrySelection === "other" ? "w-[30%] min-w-[150px]" : "w-full min-w-[180px]"}`}
+                  style={{ height: 40 }}
+                >
                   <SelectValue placeholder="Select industry" />
                 </SelectTrigger>
                 <SelectContent>
@@ -475,7 +501,7 @@ export default function OfferDetailsPage() {
                     updateDraft({ industry: nextValue });
                   }}
                   placeholder="Type your industry"
-                  className="h-10 w-44"
+                  className="h-10 min-w-0 w-[70%] flex-1"
                 />
               ) : null}
             </div>
@@ -486,7 +512,7 @@ export default function OfferDetailsPage() {
             <Textarea
               value={draft.intake_data.whats_included}
               onChange={(event) => updateIntakeField("whats_included", event.target.value)}
-              className="min-h-20"
+              className="min-h-24"
             />
           </label>
 
@@ -495,7 +521,7 @@ export default function OfferDetailsPage() {
             <Textarea
               value={draft.intake_data.pain_point}
               onChange={(event) => updateIntakeField("pain_point", event.target.value)}
-              className="min-h-20"
+              className="min-h-24"
             />
           </label>
 
@@ -504,14 +530,14 @@ export default function OfferDetailsPage() {
             <Textarea
               value={draft.intake_data.transformation}
               onChange={(event) => updateIntakeField("transformation", event.target.value)}
-              className="min-h-20"
+              className="min-h-24"
             />
           </label>
         </div>
 
         {error ? <p className="mt-4 text-sm text-status-error-text">{error}</p> : null}
 
-        <div className="mt-6 min-h-16 border-t border-border pt-4">
+        <div className="mt-7 min-h-16 border-t border-border pt-5">
           {isDirty ? (
             <div className="flex items-center justify-end gap-2">
               <button
@@ -525,7 +551,7 @@ export default function OfferDetailsPage() {
                 type="button"
                 disabled={isSaving}
                 onClick={() => void saveChanges()}
-                className="inline-flex h-10 items-center rounded-button bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center rounded-button bg-[#9a4a1f] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#7f3c18] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving ? "Saving..." : "Save"}
               </button>
@@ -534,7 +560,7 @@ export default function OfferDetailsPage() {
         </div>
       </div>
 
-      <div className="rounded-card border border-border bg-transparent p-5">
+      <div className="rounded-card border border-border bg-transparent p-6 md:p-7">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-primary">Funnels</h2>
           <Badge variant="outline" className="text-xs text-muted">
@@ -573,8 +599,12 @@ export default function OfferDetailsPage() {
                   <TableRow key={funnel.id} className="h-[64px] border-[#ebe8e3] hover:bg-[#f7f5f2]">
                     <TableCell className="px-4 py-4 font-medium text-primary">{funnel.name}</TableCell>
                     <TableCell className="py-4 text-[#4f4a44]">{formatFunnelType(funnel.funnel_type)}</TableCell>
-                    <TableCell className="py-4 text-[#4f4a44]">{funnel.style.replaceAll("_", " ")}</TableCell>
-                    <TableCell className="py-4 text-[#4f4a44]">{funnel.status}</TableCell>
+                    <TableCell className="py-4 text-[#4f4a44]">{formatEnumLabel(funnel.style)}</TableCell>
+                    <TableCell className="py-4">
+                      <Badge variant="outline" className={`h-7 rounded-pill px-3 text-xs font-semibold ${getFunnelStatusTone(funnel.status)}`}>
+                        {formatEnumLabel(funnel.status)}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="py-4 text-right text-[#7a756e]">{formatDate(funnel.created_at)}</TableCell>
                   </TableRow>
                 ))}
@@ -584,7 +614,7 @@ export default function OfferDetailsPage() {
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-4 rounded-card border border-border bg-transparent p-5">
+      <div className="flex items-center justify-between gap-4 rounded-card border border-border bg-transparent p-6 md:p-7">
         <div className="space-y-1">
           <h2 className="text-[16px] font-semibold text-primary">Delete offer</h2>
           <p className="text-[13px] leading-tight text-secondary">Permanently delete this offer and its funnels.</p>
@@ -621,7 +651,7 @@ export default function OfferDetailsPage() {
                 setIsLeaveDialogOpen(false);
                 router.push("/offers");
               }}
-              className="inline-flex h-10 items-center rounded-button bg-black px-4 text-sm font-semibold text-white hover:bg-[#d63500]"
+              className="inline-flex h-10 items-center rounded-button bg-orange px-4 text-sm font-semibold text-white transition-colors hover:bg-[#d63500]"
             >
               Leave without saving
             </button>
@@ -645,7 +675,7 @@ export default function OfferDetailsPage() {
             <DialogDescription asChild className="space-y-1 text-[15px] leading-6">
               <div>
                 <p>
-                  This action cannot be undone. <span className="text-[#dc2626]">This will permanently delete your project.</span>{" "}
+                  This action cannot be undone. <span className="text-[#dc2626]">This will permanently delete your offer.</span>{" "}
                   Including:
                 </p>
               </div>
@@ -697,49 +727,60 @@ export default function OfferDetailsPage() {
         }}
       >
         <DialogContent className="flex min-h-[300px] max-w-[420px] flex-col gap-0">
-          <DialogHeader className="mb-2">
-            <DialogTitle className="text-[26px] font-bold tracking-[-0.02em]">Final confirmation</DialogTitle>
-            <DialogDescription asChild className="space-y-1 text-[15px] leading-6">
-              <div>
-                <p>Are you sure you want to delete {offer.name}?</p>
-                <p>Type CONFIRM below to proceed.</p>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-1 space-y-2">
-            <Input
-              value={deleteConfirmation}
-              onChange={(event) => setDeleteConfirmation(event.target.value)}
-              placeholder="Type CONFIRM"
-              className="h-10"
-            />
-          </div>
-          <div className="mt-2 flex items-center gap-1 text-[#dc2626]">
-            <AlertTriangle className="h-4 w-4" />
-            <p className="text-[15px]">This action is irreversible.</p>
-          </div>
-          <div className="mt-2 flex items-center justify-end gap-2 pt-6">
-            <button
-              type="button"
-              disabled={isDeleting}
-              onClick={() => {
-                setIsDeleteConfirmOpen(false);
-                setDeleteConfirmation("");
-                setIsDeleteWarningOpen(true);
-              }}
-              className="inline-flex h-10 items-center rounded-[9px] bg-[#faf9f7] px-4 text-sm font-medium text-primary transition-colors hover:bg-[#f0ede8] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              disabled={!isDeleteConfirmationValid || isDeleting}
-              onClick={() => void deleteOffer()}
-              className="inline-flex h-10 items-center rounded-[9px] bg-[#dc2626] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#b42318] disabled:bg-[#f1a4a4] disabled:text-white disabled:cursor-not-allowed"
-            >
-              {isDeleting ? "Deleting..." : "Delete offer"}
-            </button>
-          </div>
+          <form
+            className="flex min-h-[300px] flex-col gap-0"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!isDeleteConfirmationValid || isDeleting) {
+                return;
+              }
+              void deleteOffer();
+            }}
+          >
+            <DialogHeader className="mb-2">
+              <DialogTitle className="text-[26px] font-bold tracking-[-0.02em]">Final confirmation</DialogTitle>
+              <DialogDescription asChild className="space-y-1 text-[15px] leading-6">
+                <div>
+                  <p>Are you sure you want to delete {offer.name}?</p>
+                  <p>Type CONFIRM below to proceed.</p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-1 space-y-2">
+              <Input
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                placeholder="Type CONFIRM"
+                className="h-10"
+                autoFocus
+              />
+            </div>
+            <div className="mt-2 flex items-center gap-1 text-[#dc2626]">
+              <AlertTriangle className="h-4 w-4" />
+              <p className="text-[15px]">This action is irreversible.</p>
+            </div>
+            <div className="mt-2 flex items-center justify-end gap-2 pt-6">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setIsDeleteConfirmOpen(false);
+                  setDeleteConfirmation("");
+                  setIsDeleteWarningOpen(true);
+                }}
+                className="inline-flex h-10 items-center rounded-[9px] bg-[#faf9f7] px-4 text-sm font-medium text-primary transition-colors hover:bg-[#f0ede8] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={!isDeleteConfirmationValid || isDeleting}
+                className="inline-flex h-10 items-center rounded-[9px] bg-[#dc2626] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#b42318] disabled:bg-[#f1a4a4] disabled:text-white disabled:cursor-not-allowed"
+              >
+                {isDeleting ? "Deleting..." : "Delete offer"}
+              </button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </section>

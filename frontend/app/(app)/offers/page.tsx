@@ -64,6 +64,8 @@ const sortOptions: Array<{ value: SortBy; label: string }> = [
 const creatorOptions = [{ value: "all_creators", label: "All creators" }];
 
 const comboboxItemClass = "data-selected:bg-[#eaf4ff] data-selected:text-[#2f6ea8]";
+const activeFilterTriggerClass =
+  "border-white bg-[#9a4a1f] text-white hover:border-white hover:bg-[#9a4a1f] hover:text-white aria-expanded:border-white aria-expanded:bg-[#9a4a1f] aria-expanded:text-white";
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -189,8 +191,8 @@ export default function OffersPage() {
   const showNoOffersState = offers.length === 0 && !hasSearchQuery && isDefaultSort;
 
   return (
-    <section className="animate-fade-up w-full space-y-5">
-      <div className="flex items-center justify-between gap-3">
+    <section className="animate-fade-up w-full space-y-6">
+      <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-3">
         <h1 className="text-[40px] leading-none font-bold tracking-[-0.03em] text-primary">Offers</h1>
         <Badge
           variant="outline"
@@ -205,7 +207,7 @@ export default function OffersPage() {
       </div>
 
       <div className="w-full">
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+        <div className="grid grid-cols-1 items-center gap-2.5 sm:grid-cols-2 sm:gap-3 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
           <div className="relative sm:col-span-2 xl:col-span-1">
             <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
               <Search className="h-4 w-4 text-[#a39f98]" />
@@ -247,11 +249,17 @@ export default function OffersPage() {
           <Combobox data={creatorOptions} type="creator" value={creatorFilter} onValueChange={() => {}}>
             <ComboboxTrigger
               aria-label="Filter by creator"
-              className="h-9 min-w-[174px] rounded-[12px] border border-[#d8d4ce] bg-transparent text-sm font-normal text-[#807b74] opacity-100 hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+              className={`h-9 min-w-[174px] rounded-[12px] border text-sm font-normal opacity-100 ${
+                creatorFilter !== "all_creators"
+                  ? activeFilterTriggerClass
+                  : "border-[#d8d4ce] bg-transparent text-[#807b74] hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+              }`}
             >
               <span className="flex w-full items-center justify-between gap-2">
                 {creatorOptions.find((option) => option.value === creatorFilter)?.label ?? "All creators"}
-                <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
+                <ChevronsUpDownIcon
+                  className={`size-4 shrink-0 ${creatorFilter !== "all_creators" ? "text-white" : "text-muted-foreground"}`}
+                />
               </span>
             </ComboboxTrigger>
             <ComboboxContent popoverOptions={{ align: "start", style: { width: "min(240px, calc(100vw - 24px))" } }}>
@@ -310,7 +318,7 @@ export default function OffersPage() {
       <div className="w-full">
         {isLoading ? (
           viewMode === "grid" ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3.5">
               {Array.from({ length: 12 }).map((_, index) => (
                 <Card key={index} className="min-h-[220px] rounded-[14px] border border-[#d9d6d1] bg-[#f4f2ef] py-0 shadow-none ring-0">
                   <div className="flex h-full min-h-[220px] flex-col px-4 py-4">
@@ -334,7 +342,7 @@ export default function OffersPage() {
           )
         ) : filteredOffers.length === 0 ? (
           showNoOffersState ? (
-            <div className="px-6 py-12 text-center">
+            <div className="px-6 py-14 text-center">
               <p className="text-sm font-semibold text-primary">No offers yet</p>
               <p className="mt-1 text-sm text-[#6f6a63]">Create your first offer to get started.</p>
               <div className="mt-4 flex items-center justify-center">
@@ -361,7 +369,7 @@ export default function OffersPage() {
             </div>
           )
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3.5">
             <Link
               href="/offers/new"
               className="group block rounded-[10px] border-2 border-dashed border-[#c7c3bd] bg-transparent transition-colors hover:border-[#afa9a2] hover:bg-[#fff4ef]"

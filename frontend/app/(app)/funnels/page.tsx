@@ -95,6 +95,8 @@ const typeOptions: Array<{ value: string; label: string }> = [
 const creatorOptions = [{ value: "all_creators", label: "All creators" }];
 
 const comboboxItemClass = "data-selected:bg-[#eaf4ff] data-selected:text-[#2f6ea8]";
+const activeFilterTriggerClass =
+  "border-white bg-[#9a4a1f] text-white hover:border-white hover:bg-[#9a4a1f] hover:text-white aria-expanded:border-white aria-expanded:bg-[#9a4a1f] aria-expanded:text-white";
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -569,12 +571,16 @@ export default function FunnelsPage() {
 
   const hasSearchQuery = query.trim().length > 0;
   const isDefaultSort = sortBy === "last_edited";
+  const isOfferFilterActive = offerFilter !== "any_offer";
+  const isStatusFilterActive = statusFilter !== "any_status";
+  const isTypeFilterActive = typeFilter !== "any_type";
+  const isCreatorFilterActive = creatorFilter !== "all_creators";
   const isFiltered =
     hasSearchQuery ||
     !isDefaultSort ||
-    statusFilter !== "any_status" ||
-    typeFilter !== "any_type" ||
-    offerFilter !== "any_offer";
+    isStatusFilterActive ||
+    isTypeFilterActive ||
+    isOfferFilterActive;
   const showNoFunnelsState =
     funnels.length === 0 &&
     !hasSearchQuery &&
@@ -723,11 +729,17 @@ export default function FunnelsPage() {
             <Combobox data={offerFilterOptions} type="offer" value={offerFilter} onValueChange={setOfferFilter}>
               <ComboboxTrigger
                 aria-label="Filter by offer"
-                className="h-9 min-w-[174px] rounded-[12px] border border-[#d8d4ce] bg-transparent text-sm font-normal text-[#3d3a36] hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+                className={`h-9 min-w-[174px] rounded-[12px] border text-sm font-normal ${
+                  isOfferFilterActive
+                    ? activeFilterTriggerClass
+                    : "border-[#d8d4ce] bg-transparent text-[#3d3a36] hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+                }`}
               >
                 <span className="flex w-full items-center justify-between gap-2">
                   {offerFilterOptions.find((option) => option.value === offerFilter)?.label ?? "Any offer"}
-                  <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <ChevronsUpDownIcon
+                    className={`size-4 shrink-0 ${isOfferFilterActive ? "text-white" : "text-muted-foreground"}`}
+                  />
                 </span>
               </ComboboxTrigger>
               <ComboboxContent popoverOptions={{ align: "start", style: { width: "min(280px, calc(100vw - 24px))" } }}>
@@ -754,11 +766,17 @@ export default function FunnelsPage() {
             <Combobox data={statusOptions} type="status" value={statusFilter} onValueChange={setStatusFilter}>
               <ComboboxTrigger
                 aria-label="Filter by status"
-                className="h-9 min-w-[164px] rounded-[12px] border border-[#d8d4ce] bg-transparent text-sm font-normal text-[#3d3a36] hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+                className={`h-9 min-w-[164px] rounded-[12px] border text-sm font-normal ${
+                  isStatusFilterActive
+                    ? activeFilterTriggerClass
+                    : "border-[#d8d4ce] bg-transparent text-[#3d3a36] hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+                }`}
               >
                 <span className="flex w-full items-center justify-between gap-2">
                   {statusOptions.find((option) => option.value === statusFilter)?.label ?? "Any status"}
-                  <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <ChevronsUpDownIcon
+                    className={`size-4 shrink-0 ${isStatusFilterActive ? "text-white" : "text-muted-foreground"}`}
+                  />
                 </span>
               </ComboboxTrigger>
               <ComboboxContent>
@@ -785,11 +803,17 @@ export default function FunnelsPage() {
             <Combobox data={typeOptions} type="type" value={typeFilter} onValueChange={setTypeFilter}>
               <ComboboxTrigger
                 aria-label="Filter by funnel type"
-                className="h-9 min-w-[164px] rounded-[12px] border border-[#d8d4ce] bg-transparent text-sm font-normal text-[#3d3a36] hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+                className={`h-9 min-w-[164px] rounded-[12px] border text-sm font-normal ${
+                  isTypeFilterActive
+                    ? activeFilterTriggerClass
+                    : "border-[#d8d4ce] bg-transparent text-[#3d3a36] hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+                }`}
               >
                 <span className="flex w-full items-center justify-between gap-2">
                   {typeOptions.find((option) => option.value === typeFilter)?.label ?? "Any type"}
-                  <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <ChevronsUpDownIcon
+                    className={`size-4 shrink-0 ${isTypeFilterActive ? "text-white" : "text-muted-foreground"}`}
+                  />
                 </span>
               </ComboboxTrigger>
               <ComboboxContent>
@@ -847,11 +871,17 @@ export default function FunnelsPage() {
             <Combobox data={creatorOptions} type="creator" value={creatorFilter} onValueChange={() => {}}>
               <ComboboxTrigger
                 aria-label="Filter by creator"
-                className="h-9 min-w-[174px] rounded-[12px] border border-[#d8d4ce] bg-transparent text-sm font-normal text-[#807b74] opacity-100 hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+                className={`h-9 min-w-[174px] rounded-[12px] border text-sm font-normal opacity-100 ${
+                  isCreatorFilterActive
+                    ? activeFilterTriggerClass
+                    : "border-[#d8d4ce] bg-transparent text-[#807b74] hover:border-[#bcb7b0] hover:bg-transparent aria-expanded:bg-transparent"
+                }`}
               >
                 <span className="flex w-full items-center justify-between gap-2">
                   {creatorOptions.find((option) => option.value === creatorFilter)?.label ?? "All creators"}
-                  <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <ChevronsUpDownIcon
+                    className={`size-4 shrink-0 ${isCreatorFilterActive ? "text-white" : "text-muted-foreground"}`}
+                  />
                 </span>
               </ComboboxTrigger>
               <ComboboxContent popoverOptions={{ align: "start", style: { width: "min(240px, calc(100vw - 24px))" } }}>
@@ -1065,7 +1095,7 @@ export default function FunnelsPage() {
                                 aria-label="Funnel actions"
                                 onClick={(event) => event.stopPropagation()}
                                 onPointerDown={(event) => event.stopPropagation()}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-[#7a756e] transition-colors hover:bg-[#f3f1ed] hover:text-primary"
+                                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[8px] text-[#7a756e] transition-colors hover:bg-sidebar-accent hover:text-primary"
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </button>
@@ -1160,7 +1190,7 @@ export default function FunnelsPage() {
                               <button
                                 type="button"
                                 aria-label="Funnel actions"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-[8px] text-[#7a756e] transition-colors hover:bg-[#f3f1ed] hover:text-primary"
+                                className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-[8px] text-[#7a756e] transition-colors hover:bg-sidebar-accent hover:text-primary"
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </button>
@@ -1294,9 +1324,8 @@ export default function FunnelsPage() {
           </DialogHeader>
 
           <ul className="mb-7 ml-1 list-disc space-y-1 pl-5 text-[15px] text-secondary">
-            <li>All generated page code</li>
+            <li>All generated funnel steps</li>
             <li>All preview links</li>
-            <li>Builder project files</li>
           </ul>
 
           <div className="mt-auto flex items-center justify-end gap-2">
@@ -1336,52 +1365,63 @@ export default function FunnelsPage() {
         }}
       >
         <DialogContent className="flex min-h-[300px] max-w-[420px] flex-col gap-0">
-          <DialogHeader className="mb-2">
-            <DialogTitle className="text-[26px] font-bold tracking-[-0.02em]">Final confirmation</DialogTitle>
-            <DialogDescription asChild className="space-y-1 text-[15px] leading-6">
-              <div>
-                <p>Are you sure you want to delete {activeFunnel?.name}?</p>
-                <p>Type CONFIRM below to proceed.</p>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
+          <form
+            className="flex min-h-[300px] flex-col gap-0"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!isDeleteConfirmationValid || isDeleting) {
+                return;
+              }
+              void deleteFunnel();
+            }}
+          >
+            <DialogHeader className="mb-2">
+              <DialogTitle className="text-[26px] font-bold tracking-[-0.02em]">Final confirmation</DialogTitle>
+              <DialogDescription asChild className="space-y-1 text-[15px] leading-6">
+                <div>
+                  <p>Are you sure you want to delete {activeFunnel?.name}?</p>
+                  <p>Type CONFIRM below to proceed.</p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="mt-1 space-y-2">
-            <Input
-              value={deleteConfirmation}
-              onChange={(event) => setDeleteConfirmation(event.target.value)}
-              placeholder="Type CONFIRM"
-              className="h-10"
-            />
-          </div>
+            <div className="mt-1 space-y-2">
+              <Input
+                value={deleteConfirmation}
+                onChange={(event) => setDeleteConfirmation(event.target.value)}
+                placeholder="Type CONFIRM"
+                className="h-10"
+                autoFocus
+              />
+            </div>
 
-          <div className="mt-2 flex items-center gap-1 text-destructive">
-            <Trash2 className="h-4 w-4" />
-            <p className="text-[15px]">This action is irreversible.</p>
-          </div>
+            <div className="mt-2 flex items-center gap-1 text-destructive">
+              <Trash2 className="h-4 w-4" />
+              <p className="text-[15px]">This action is irreversible.</p>
+            </div>
 
-          <div className="mt-2 flex items-center justify-end gap-2 pt-6">
-            <button
-              type="button"
-              disabled={isDeleting}
-              onClick={() => {
-                setIsDeleteConfirmOpen(false);
-                setDeleteConfirmation("");
-                setIsDeleteWarningOpen(true);
-              }}
-              className="inline-flex h-10 items-center rounded-[9px] bg-[#faf9f7] px-4 text-sm font-medium text-primary transition-colors hover:bg-[#f0ede8] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              disabled={!isDeleteConfirmationValid || isDeleting}
-              onClick={() => void deleteFunnel()}
-              className="inline-flex h-10 items-center rounded-[9px] bg-destructive px-4 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:bg-destructive/40 disabled:text-white"
-            >
-              {isDeleting ? "Deleting..." : "Delete funnel"}
-            </button>
-          </div>
+            <div className="mt-2 flex items-center justify-end gap-2 pt-6">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setIsDeleteConfirmOpen(false);
+                  setDeleteConfirmation("");
+                  setIsDeleteWarningOpen(true);
+                }}
+                className="inline-flex h-10 items-center rounded-[9px] bg-[#faf9f7] px-4 text-sm font-medium text-primary transition-colors hover:bg-[#f0ede8] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={!isDeleteConfirmationValid || isDeleting}
+                className="inline-flex h-10 items-center rounded-[9px] bg-destructive px-4 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:bg-destructive/40 disabled:text-white"
+              >
+                {isDeleting ? "Deleting..." : "Delete funnel"}
+              </button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 

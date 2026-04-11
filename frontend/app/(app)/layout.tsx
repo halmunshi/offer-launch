@@ -157,7 +157,7 @@ export default function AppLayout({
             <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
               <SidebarMenu className="min-w-0 group-data-[collapsible=icon]:hidden">
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild size="lg">
+                  <SidebarMenuButton asChild size="lg" className="hover:bg-transparent hover:text-sidebar-foreground active:bg-transparent">
                     <Link href="/home" className="font-extrabold tracking-[-0.02em]">
                       <span className="text-[15px] text-primary">Offer</span>
                       <span className="text-[15px] text-[#f26522]">Launch</span>

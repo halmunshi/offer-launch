@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { PanelLeftIcon, PanelRightIcon } from "lucide-react"
@@ -256,23 +257,31 @@ function SidebarTrigger({
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar, state } = useSidebar()
+  const tooltipLabel = state === "collapsed" ? "Open sidebar" : "Close Sidebar"
 
   return (
-    <Button
-      data-sidebar="trigger"
-      data-slot="sidebar-trigger"
-      variant="ghost"
-      size="icon-sm"
-      className={cn(className)}
-      onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
-      }}
-      {...props}
-    >
-      {state === "collapsed" ? <PanelRightIcon /> : <PanelLeftIcon />}
-      <span className="sr-only">Toggle Sidebar</span>
-    </Button>
+    <TooltipProvider delayDuration={1500}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            data-sidebar="trigger"
+            data-slot="sidebar-trigger"
+            variant="ghost"
+            size="icon-sm"
+            className={cn("hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", className)}
+            onClick={(event) => {
+              onClick?.(event)
+              toggleSidebar()
+            }}
+            {...props}
+          >
+            {state === "collapsed" ? <PanelRightIcon /> : <PanelLeftIcon />}
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">{tooltipLabel}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
