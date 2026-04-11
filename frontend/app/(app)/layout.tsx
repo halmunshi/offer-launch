@@ -152,142 +152,139 @@ export default function AppLayout({
   return (
     <TooltipProvider>
       <SidebarProvider className="min-h-screen bg-page text-primary">
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild size="lg">
-                <Link href="/home" className="font-extrabold tracking-[-0.02em]">
-                  <span className="text-[15px] text-primary">Offer</span>
-                  <span className="text-[15px] text-[#f26522]">Launch</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
-
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+              <SidebarMenu className="min-w-0 group-data-[collapsible=icon]:hidden">
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Home" isActive={pathname === "/home" || pathname === "/dashboard"}>
-                    <Link href="/home">
-                      <House />
-                      <span>Home</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Offers" isActive={pathname.startsWith("/offers")}>
-                    <Link href="/offers">
-                      <LayoutGrid />
-                      <span>Offers</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Funnels" isActive={pathname === "/funnels"}>
-                    <Link href="/funnels">
-                      <Funnel />
-                      <span>Funnels</span>
+                  <SidebarMenuButton asChild size="lg">
+                    <Link href="/home" className="font-extrabold tracking-[-0.02em]">
+                      <span className="text-[15px] text-primary">Offer</span>
+                      <span className="text-[15px] text-[#f26522]">Launch</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
 
-          <SidebarSeparator />
-
-          <SidebarGroup>
-            <SidebarGroupLabel>Coming soon</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton disabled>
-                    <Megaphone />
-                    <span>Campaigns</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton disabled>
-                    <BarChart3 />
-                    <span>Analytics</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === "/settings"}>
-                <Link href="/settings">
-                  <Settings />
-                  <span>Settings</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-
-            <SidebarMenuItem className="relative">
-              <div ref={userMenuRef} className="relative">
-                <SidebarMenuButton
-                  size="lg"
-                  onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <span className="text-xs font-semibold">{userInitial}</span>
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                    <span className="truncate font-medium">
-                      {user?.fullName ?? user?.firstName ?? "OfferLaunch User"}
-                    </span>
-                    <span className="truncate text-xs text-muted">{planLabel}</span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
-                </SidebarMenuButton>
-
-                {isUserMenuOpen ? (
-                  <div className="absolute right-0 bottom-[calc(100%+8px)] z-20 min-w-40 rounded-input border border-border bg-card p-1 shadow-sm group-data-[collapsible=icon]:right-[calc(-100%-8px)]">
-                    <SignOutButton redirectUrl="/sign-in">
-                      <button
-                        type="button"
-                        className="block w-full rounded-button px-3 py-2 text-left text-sm font-medium text-status-error-text transition-colors hover:bg-status-error-bg"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        Sign out
-                      </button>
-                    </SignOutButton>
-                  </div>
-                ) : null}
-              </div>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-        <SidebarRail />
-      </Sidebar>
-
-      <SidebarInset
-        className={`h-screen bg-page ${isFullCanvasOnboardingRoute ? "overflow-hidden" : "overflow-y-auto [scrollbar-gutter:stable]"}`}
-      >
-        {!isFullCanvasOnboardingRoute ? (
-          <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-3">
-              <SidebarTrigger className="-ml-1" />
+              <SidebarTrigger className="ml-auto group-data-[collapsible=icon]:hidden" />
+              <SidebarTrigger className="hidden group-data-[collapsible=icon]:inline-flex" />
             </div>
-          </header>
-        ) : null}
+          </SidebarHeader>
 
-        {isFullCanvasOnboardingRoute ? children : <div className="p-4 md:p-10">{children}</div>}
-      </SidebarInset>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Platform</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Home" isActive={pathname === "/home" || pathname === "/dashboard"}>
+                      <Link href="/home">
+                        <House />
+                        <span>Home</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Offers" isActive={pathname.startsWith("/offers")}>
+                      <Link href="/offers">
+                        <LayoutGrid />
+                        <span>Offers</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Funnels" isActive={pathname === "/funnels"}>
+                      <Link href="/funnels">
+                        <Funnel />
+                        <span>Funnels</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarSeparator />
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Coming soon</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled>
+                      <Megaphone />
+                      <span>Campaigns</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled>
+                      <BarChart3 />
+                      <span>Analytics</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/settings"}>
+                  <Link href="/settings">
+                    <Settings />
+                    <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem className="relative">
+                <div ref={userMenuRef} className="relative">
+                  <SidebarMenuButton
+                    size="lg"
+                    onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                      <span className="text-xs font-semibold">{userInitial}</span>
+                    </div>
+                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                      <span className="truncate font-medium">
+                        {user?.fullName ?? user?.firstName ?? "OfferLaunch User"}
+                      </span>
+                      <span className="truncate text-xs text-muted">{planLabel}</span>
+                    </div>
+                    <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                  </SidebarMenuButton>
+
+                  {isUserMenuOpen ? (
+                    <div className="absolute right-0 bottom-[calc(100%+8px)] z-20 min-w-40 rounded-input border border-border bg-card p-1 shadow-sm group-data-[collapsible=icon]:right-[calc(-100%-8px)]">
+                      <SignOutButton redirectUrl="/sign-in">
+                        <button
+                          type="button"
+                          className="block w-full rounded-button px-3 py-2 text-left text-sm font-medium text-status-error-text transition-colors hover:bg-status-error-bg"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          Sign out
+                        </button>
+                      </SignOutButton>
+                    </div>
+                  ) : null}
+                </div>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
+
+        <SidebarInset
+          className={`h-screen bg-page ${isFullCanvasOnboardingRoute ? "overflow-hidden" : "overflow-y-auto [scrollbar-gutter:stable]"}`}
+        >
+          {isFullCanvasOnboardingRoute ? children : <div className="p-4 md:p-20">{children}</div>}
+        </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
   );

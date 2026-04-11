@@ -737,7 +737,7 @@ export default function OfferDetailsPage() {
               onClick={() => void deleteOffer()}
               className="inline-flex h-10 items-center rounded-[9px] bg-[#dc2626] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#b42318] disabled:bg-[#f1a4a4] disabled:text-white disabled:cursor-not-allowed"
             >
-              {isDeleting ? "Deleting..." : "Delete project"}
+              {isDeleting ? "Deleting..." : "Delete offer"}
             </button>
           </div>
         </DialogContent>
